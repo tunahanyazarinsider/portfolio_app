@@ -183,7 +183,6 @@ portfolio_app/
 - Redis in-memory cache (10-minute TTL)
 - Caches: stock info, prices, historical data
 - Reduces Yahoo Finance API calls by ~90%
-- See [REDIS_GUIDE.md](REDIS_GUIDE.md) for details
 
 ### 6. **UI/UX**
 - Dark/Light theme toggle
