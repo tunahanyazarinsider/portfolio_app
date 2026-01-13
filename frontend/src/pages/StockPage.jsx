@@ -465,31 +465,11 @@ const StockPage = () => {
   };
 
   // above function will be called in an use effect which will be triggered when the date range changes or stock symbol changes
+  // Handle date range changes (only refresh chart data, not full page data)
   useEffect(() => {
-    const fetchStockData = async () => {
-      try {
-        const stock = await stockService.getStock(symbol);
-        if (!stock) {
-          setStock(null);
-          setLoading(false);
-          return;
-        }
-        setStock(stock);
-        
-        const priceData = await stockService.getStockPrice(symbol);
-        setPrice(priceData.close_price);
-
-        // Fetch default chart data for the initial date range
-        fetchChartData(dateRange);
-      } catch (error) {
-        console.error('Error fetching stock data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStockData();
-  }, [symbol, dateRange]);
+    if (!stock) return; // Only fetch chart data if stock is already loaded
+    fetchChartData(dateRange);
+  }, [dateRange, stock]);
 
   // the case where the stock is being fetched
   if (loading) {
