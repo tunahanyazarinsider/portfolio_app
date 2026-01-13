@@ -5,13 +5,9 @@ from datetime import date
 from typing import List, Optional
 from utils.db_context import get_db
 from services.stock_service import StockService
-from models.models import Stock, StockPrice, Portfolio, PortfolioHolding
+from models.models import *
 from models.pydantic_models import *
 from utils.authentication_utils import verify_role # this function checks the token and returns the username if the token is legit
-
-from Backend.stock_service.models.pydantic_models import PortfolioResponse, PaginatedStockResponse, \
-    StockWithPriceResponse, HoldingCreate, HoldingResponse, IncomeStatementResponse, CashFlowResponse, \
-    StockPriceResponse, StockResponse, SectorResponse, StockPriceInRangeRequest, BalanceSheetResponse
 
 router = APIRouter(
     prefix="/api/stocks",
