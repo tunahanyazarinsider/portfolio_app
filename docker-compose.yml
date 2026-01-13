@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: portfolio_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: Portfolio_Management
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - portfolio_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+      interval: 5s
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: Backend/authentication_service/Dockerfile
+    container_name: auth_service
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - portfolio_network
+
+  # Stock Service
+  stock-service:
+    build:
+      context: .
+      dockerfile: Backend/stock_service/Dockerfile
+    container_name: stock_service
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
+    ports:
+      - "8001:8001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - portfolio_network
+
+  # Watchlist Service
+  watchlist-service:
+    build:
+      context: .
+      dockerfile: Backend/watchlist_service/Dockerfile
+    container_name: watchlist_service
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
+    ports:
+      - "8002:8002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - portfolio_network
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: portfolio_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - stock-service
+      - watchlist-service
+    networks:
+      - portfolio_network
+    environment:
+      REACT_APP_AUTH_API: http://auth-service:8000
+      REACT_APP_STOCK_API: http://stock-service:8001
+      REACT_APP_WATCHLIST_API: http://watchlist-service:8002
+
+volumes:
+  mysql_data:
+
+networks:
+  portfolio_network:
+    driver: bridge

@@ -18,8 +18,11 @@ from services.watchlist_service import WatchlistService
 # Single dot (.) means current directory, double dot (..) means parent directory
 
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables (ignore if already exist)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Note: Tables may already exist: {e}")
 
 # Initialize FastAPI app
 app = FastAPI(
