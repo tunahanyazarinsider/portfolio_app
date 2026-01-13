@@ -29,11 +29,11 @@ import InputAdornment from '@mui/material/InputAdornment';
 
 
 const AllStocksPage = () => {
-    // all stocks are fetched from the backend and stored in the state 
+    // all stocks are fetched from the backend and stored in the state
     const [stocks, setStocks] = useState([]);
     // filteredStocks state is used to store the stocks that meet the filter criteria
     const [filteredStocks, setFilteredStocks] = useState([]);
-    
+
     // loading state is used to show a loading spinner while fetching data
     const [loading, setLoading] = useState(true);
     // error state is used to show an error message if the data fetching fails
@@ -44,10 +44,15 @@ const AllStocksPage = () => {
     // Add a new state to track the original filtered stocks before search
     const [preSearchFilteredStocks, setPreSearchFilteredStocks] = useState([]);
 
+    // pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalStocks, setTotalStocks] = useState(0);
+    const [itemsPerPage] = useState(10);
 
     // openFiltersDialog state is used to control the visibility of the filters dialog
     const [openFiltersDialog, setOpenFiltersDialog] = useState(false);
-    const [sortColumn, setSortColumn] = useState('currentPrice');
+    const [sortColumn, setSortColumn] = useState('current_price');
     const [sortDirection, setSortDirection] = useState('desc');
     const navigate = useNavigate();
     const theme = useTheme();
@@ -90,19 +95,15 @@ const AllStocksPage = () => {
         maxInterestCoverage: Infinity
     });
 
-    // this is a state variable since columns can change we user apply some filters.
+    // this is a state variable since columns can change when user applies some filters.
+    // Note: For Phase 1, we're showing basic columns available from the combined endpoint
+    // Additional metrics will be added in Phase 2/3
     const [columns, setColumns] = useState([
       { key: 'stock_symbol', label: 'Symbol', numeric: false },
-      { key: 'currentPrice', label: 'Price', numeric: true },
-      { key: 'regularMarketChangePercent', label: 'Day Change %', numeric: true },
-      { key: 'regularMarketVolume', label: 'Volume', numeric: true },
+      { key: 'name', label: 'Name', numeric: false },
+      { key: 'sector', label: 'Sector', numeric: false },
+      { key: 'current_price', label: 'Price', numeric: true },
       { key: 'market_cap', label: 'Market Cap', numeric: true },
-      { key: '1_week', label: '1 Week %', numeric: true },
-      { key: '1_month', label: '1 Month %', numeric: true },
-      { key: '3_months', label: '3 Months %', numeric: true },
-      { key: '1_year', label: '1 Year %', numeric: true },
-      { key: '3_years', label: '3 Years %', numeric: true },
-      { key: '5_years', label: '5 Years %', numeric: true },
   ]);
 
   // when user plays with filters, we need to update the columns. This dictionary is used to map the columns to the keys in the stock object. 
@@ -137,17 +138,17 @@ const AllStocksPage = () => {
 
   const formatValue = (value, key) => {
       if (value === null || value === undefined) return 'N/A';
-    
+
       // Check if value is a number before calling toFixed
       const numValue = Number(value);
-        
+
       if (isNaN(numValue)) return value.toString();
-    
+
       if (key === 'market_cap') {
           return (numValue / 1e9).toFixed(1) + 'B';
       }
-      if (['currentPrice', 'regularMarketVolume'].includes(key)) {
-          return numValue.toLocaleString();
+      if (['current_price', 'currentPrice'].includes(key)) {
+          return numValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
       if (key.includes('%')) {
           return numValue.toFixed(2) + '%';
@@ -168,29 +169,16 @@ const AllStocksPage = () => {
         const fetchStocksData = async () => {
             try {
                 setLoading(true);
-                const allStocks = await stockService.getAllStocksDetailed();
+                // Fetch paginated stocks with prices from the combined endpoint
+                const response = await stockService.getStocksWithPrices(currentPage, itemsPerPage);
 
-                const stocksWithDetails = await Promise.all(
-                    allStocks.map(async (stock) => {
-                        const stockPrices = await stockService.getStockPriceInPredefinedDateRange(stock.stock_symbol);
-                        return {
-                            ...stock,
-                            market_cap: stock.sharesOutstanding * stock.currentPrice,
-                            regularMarketChangePercent: ((stock.currentPrice / stock.previousClose) - 1) * 100,
-                            prices: stockPrices,
-                            '1_week': calculatePercentageChange(stockPrices, 7),
-                            '1_month': calculatePercentageChange(stockPrices, 30),
-                            '3_months': calculatePercentageChange(stockPrices, 90),
-                            '1_year': calculatePercentageChange(stockPrices, 365),
-                            '3_years': calculatePercentageChange(stockPrices, 3 * 365),
-                            '5_years': calculatePercentageChange(stockPrices, 5 * 365)
-                        };
-                    })
-                );
-                
-                // stock info coming from backend + calculated fields (market cap, day change %, etc.)
-                setStocks(stocksWithDetails);
-                setFilteredStocks(stocksWithDetails);
+                // Update pagination info from response
+                setTotalStocks(response.total);
+                setTotalPages(response.pages);
+
+                // Stock info now comes directly from the endpoint with current prices included
+                setStocks(response.data);
+                setFilteredStocks(response.data);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching stocks:', error);
@@ -199,9 +187,9 @@ const AllStocksPage = () => {
             }
         };
 
-        // stock data fetched every time the page is loaded
+        // Fetch stock data when page changes
         fetchStocksData();
-    }, []);
+    }, [currentPage, itemsPerPage]);
 
 
     // days input unu alıcak ve prices alıcak = ve percentage change hesaplayacak
@@ -268,13 +256,11 @@ const AllStocksPage = () => {
     // Apply the filters to the stocks array and update the columns based on the filters
     const applyFilters = () => {
       const filtered = stocks.filter(stock => {
-        const meetsBasicFilters = 
-          (filters.minPrice === 0 || stock.currentPrice >= filters.minPrice) &&
-          (filters.maxPrice === Infinity || stock.currentPrice <= filters.maxPrice) &&
+        const meetsBasicFilters =
+          (filters.minPrice === 0 || stock.current_price >= filters.minPrice) &&
+          (filters.maxPrice === Infinity || stock.current_price <= filters.maxPrice) &&
           (filters.minMarketCap === 0 || stock.market_cap >= filters.minMarketCap) &&
-          (filters.maxMarketCap === Infinity || stock.market_cap <= filters.maxMarketCap) &&
-          (filters.minVolume === 0 || stock.regularMarketVolume >= filters.minVolume) &&
-          (filters.maxVolume === Infinity || stock.regularMarketVolume <= filters.maxVolume);
+          (filters.maxMarketCap === Infinity || stock.market_cap <= filters.maxMarketCap);
     
         const meetsProfitabilityFilters =
           (filters.minPriceToEarnings === 0 || stock.trailingPE >= filters.minPriceToEarnings) &&
@@ -318,69 +304,10 @@ const AllStocksPage = () => {
       });
     
       setFilteredStocks(filtered);
+
+      // For Phase 1, we only support basic filters (price, market cap)
+      // Advanced filters will be added in Phase 2/3 when we fetch more detailed data
       setOpenFiltersDialog(false);
-    
-      // First, collect all columns that should be displayed no matter what
-      const baseColumns = ['stock_symbol', 'currentPrice', 'regularMarketChangePercent', 'regularMarketVolume', 'market_cap', '1_week', '1_month', '3_months', '1_year', '3_years', '5_years'];
-      // create a variable where we will store the updated columns to be displayed in the table
-      let updatedColumns = [...columns].filter(col => baseColumns.includes(col.key));
-      // create a set to keep track of which metrics we've already processed
-      // min ve max olarka girilen değerleri 2 defa eklememek için
-      const processedMetrics = new Set();
-    
-      // Find the insert index once, we will insert the new columns before the 1_week column
-      const insertIndex = columns.findIndex(col => col.key === '1_week');
-      
-      // for each filterKey (minReturnOnAssets for example) in the filters object
-      Object.keys(filters).forEach(filterKey => {
-        if (!filterKey.includes('min') && !filterKey.includes('max')) return;
-    
-        // Get the base metric name : minReturnOnAssets -> ReturnOnAssets
-        const baseMetric = filterKey.replace(/^(min|max)/, '');
-        
-        // Skip if we've already processed this metric
-        if (processedMetrics.has(baseMetric)) return;
-        // if not processed, add the metric (ReturnOnAssets) to the set 
-        processedMetrics.add(baseMetric);
-    
-        // Get both min and max filter values
-        const minKey = `min${baseMetric}`;
-        const maxKey = `max${baseMetric}`;
-        const minValue = filters[minKey]; // minReturnOnAssets filter value değeri
-        const maxValue = filters[maxKey]; // maxReturnOnAssets filter value değeri
-    
-        // Determine if either filter is active
-        const isMinActive = (minValue !== -Infinity && minValue !== 0);
-        const isMaxActive = maxValue !== Infinity;
-
-        // if one of the filters is active, add the ReturnOnAssets column to the updatedColumns array to be displayed in the table
-        if (isMinActive || isMaxActive) {
-          // Get the column from mapping based on the filter key
-          const newColumn = dynamicColumnMapping[minKey]; // Use minKey as reference
-
-          // add the column to the columns to be displayed if it doesn't already exist and it's not a base column
-          if (newColumn && !baseColumns.includes(newColumn.key)) {
-            // Check if column already exists
-            const columnExists = updatedColumns.some(col => col?.key === newColumn.key);
-
-            if (!columnExists) {
-              // Insert at the correct position
-              if (insertIndex !== -1) {
-                // insert 'newColumn' before the '1_week' column at the insertIndex
-                updatedColumns.splice(insertIndex, 0, newColumn);
-              } else {
-                updatedColumns.push(newColumn);
-              }
-            }
-          }
-        }
-      });
-      // eğer bir filter default değerine dönüştürülürse (0, Infinity, -Infinity) bu filter ı columns dan çıkarıyoruz
-      // Bu çıkarma işlemi updated columns array inde bulunmayarak oluyor. Yani aslında çıkarmıyoruz
-      // yeni oluşturduğumuz updatedColumns array e bu column u dahil etmeyerek oluyor her bir applyfilter çağrılmasından sonra.
-    
-      // Update columns state once with all changes
-      setColumns(updatedColumns);
   };
 
   // Function to have a search bar to search for stocks
@@ -1349,7 +1276,44 @@ const AllStocksPage = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-        
+
+            {/* Pagination Controls */}
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              p: 2,
+              mt: 2
+            }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Showing page {currentPage} of {totalPages} ({totalStocks} total stocks)
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                  Previous
+                </Button>
+                <Typography sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 2,
+                  color: 'text.secondary'
+                }}>
+                  {currentPage} / {totalPages}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
+
       {renderFiltersDialog()}
     </Box>
   );

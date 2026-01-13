@@ -9,6 +9,9 @@ from models.models import Stock, StockPrice, Portfolio, PortfolioHolding
 from models.pydantic_models import *
 from utils.authentication_utils import verify_role # this function checks the token and returns the username if the token is legit
 
+from Backend.stock_service.models.pydantic_models import PortfolioResponse, PaginatedStockResponse, \
+    StockWithPriceResponse, HoldingCreate, HoldingResponse, IncomeStatementResponse, CashFlowResponse, \
+    StockPriceResponse, StockResponse, SectorResponse, StockPriceInRangeRequest, BalanceSheetResponse
 
 router = APIRouter(
     prefix="/api/stocks",
@@ -17,6 +20,79 @@ router = APIRouter(
 
 
 # ARTIK STOCK PRİCE HAKKINDA DB  ISLEMI YAPMICAZ, DB YE EKLEMEK VE ORDAN CEKMEK YERİNE YAHOO FİNANCE DEN CEKİCEZ
+
+# ===== OPTIMIZED ENDPOINTS FOR PERFORMANCE =====
+
+# Get all stocks with their current prices (paginated)
+@router.get("/with-prices", response_model=PaginatedStockResponse)
+def get_stocks_with_prices(
+    page: int = 1,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """
+    Get paginated stocks with their current prices and sector information.
+    This endpoint combines stock data + current price in a single request.
+
+    Results are cached for better performance.
+
+    Query Parameters:
+    - page: Page number (default: 1)
+    - limit: Items per page (default: 10)
+
+    Returns paginated response with total count and page info.
+    """
+    service = StockService(db)
+
+    # Get total count
+    total = db.query(Stock).count()
+
+    # Calculate offset
+    offset = (page - 1) * limit
+
+    # Get stocks for this page
+    stocks = db.query(Stock).offset(offset).limit(limit).all()
+
+    result = []
+    for stock in stocks:
+        try:
+            # Get current price from cache first, then Yahoo Finance
+            current_price = service.get_current_stock_price(stock.stock_symbol)
+
+            # Get sector name
+            sector_name = stock.sector.name if stock.sector else "Unknown"
+
+            result.append(StockWithPriceResponse(
+                stock_symbol=stock.stock_symbol,
+                name=stock.name,
+                sector=sector_name,
+                market_cap=stock.market_cap,
+                current_price=current_price,
+                last_updated=stock.last_updated
+            ))
+        except Exception as e:
+            print(f"Error fetching price for {stock.stock_symbol}: {e}")
+            # Still include stock even if price fetch fails
+            result.append(StockWithPriceResponse(
+                stock_symbol=stock.stock_symbol,
+                name=stock.name,
+                sector=stock.sector.name if stock.sector else "Unknown",
+                market_cap=stock.market_cap,
+                current_price=None,
+                last_updated=stock.last_updated
+            ))
+
+    # Calculate total pages
+    total_pages = (total + limit - 1) // limit
+
+    return PaginatedStockResponse(
+        data=result,
+        total=total,
+        page=page,
+        pages=total_pages,
+        limit=limit
+    )
+
 
 # ENDPOİNTS RELATED TO PORTFOLIOS
 
@@ -201,14 +277,15 @@ def get_stock_prices(request: StockPriceInRangeRequest, db: Session = Depends(ge
     
     return response
 
-# to get predefined dates stock prices for a given stock symbol
+# to get predefined dates stock prices for a given stock symbol (with or without trailing slash)
+@router.get("/{symbol}/prices", response_model=List[StockPriceResponse])
 @router.get("/{symbol}/prices/", response_model=List[StockPriceResponse])
 def get_predefined_stock_prices(symbol: str, db: Session = Depends(get_db)):
     stock_service = StockService(db)
     prices = stock_service.get_prices_of_stock_in_predefined_dates(symbol)
     if not prices:
         raise HTTPException(status_code=404, detail="Stock prices not found")
-    
+
     # Convert date to string
     response = [
         StockPriceResponse(
@@ -218,7 +295,7 @@ def get_predefined_stock_prices(symbol: str, db: Session = Depends(get_db)):
         )
         for price in prices
     ]
-    
+
     return response
 
 # Retrieve the income statement data for a given stock symbol

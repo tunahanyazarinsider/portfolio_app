@@ -298,6 +298,19 @@ const stockService = {
     }
   },
 
+  // Get paginated stocks with current prices (combined endpoint)
+  // response: { data: [...], total: N, page: N, pages: N, limit: N }
+  getStocksWithPrices: async (page = 1, limit = 10) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/with-prices`, {
+        params: { page, limit }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
+
   // http://localhost:8001/api/stocks/sectors-all/{symbol}
   /*
     example response:

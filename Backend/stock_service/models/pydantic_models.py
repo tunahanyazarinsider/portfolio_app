@@ -147,3 +147,25 @@ class SectorResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class StockWithPriceResponse(BaseModel):
+    """Combined response with stock info and current price"""
+    stock_symbol: str
+    name: str
+    sector: str
+    market_cap: Optional[Decimal]
+    current_price: Optional[Decimal]
+    last_updated: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class PaginatedStockResponse(BaseModel):
+    """Paginated stocks with prices"""
+    data: List[StockWithPriceResponse]
+    total: int
+    page: int
+    pages: int
+    limit: int
