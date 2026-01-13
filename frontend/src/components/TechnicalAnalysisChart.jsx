@@ -54,7 +54,7 @@ const TechnicalAnalysisChart = ({ symbol }) => {
     return () => {
       onLoadScriptRef.current = null;
     };
-  }, []);
+  }, [symbol, themeMode, chartType]);
 
   function createWidget(theme = 'light', chartStyle = 'candlestick') {
     if (document.getElementById('technical-analysis-chart') && 'TradingView' in window) {
