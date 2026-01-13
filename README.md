@@ -1,160 +1,557 @@
-# portfolio_app
-Personal Portfolio Management Application
+# Portfolio Management Application
 
+A modern, full-stack web application for managing investment portfolios with real-time stock data, financial analytics, and portfolio performance tracking.
 
-Tasks:
-- Stock Page
-    - price, last year data, visualizations
-- user portfolio
-- Allow users to set price or performance thresholds for notifications.
--  Integrate news about stocks in their portfolio or market trends.
-- Transaction Simulator: Let users simulate buying/selling to see hypothetical outcomes.
-- Community Discussions: Enable users to share insights or strategies within forums.
-- Leaderboard: Create a virtual competition for portfolio performance.
-- Dark Mode: Include a theme toggle for comfortable viewing.
-- only english for now
+## 🎯 Overview
 
+This is a **read-heavy fintech application** designed to provide users with comprehensive portfolio management capabilities, including:
+- Real-time stock prices and market data
+- Portfolio creation and management
+- Financial analytics (income statements, balance sheets, cash flows)
+- Watchlist monitoring with price alerts
+- Sector analysis and stock comparisons
+- Dark/Light theme support
 
-- maybe later some educational concepts like:
-    - Achievements: Introduce badges for tracking milestones like "Portfolio Diversified."
-    - Quizzes: Include interactive content to educate users about investing.
-    - Beginner Guides: Offer tutorials and guides for understanding the stock market.
-    - Historical Market Events: Show insights from events like the 2008 crisis or dot-com bubble.
-
-
-### **Database Selection**
-
-For this app, a combination of **Relational Database (PostgreSQL)** and **NoSQL Database (MongoDB)** could work well:
-
-- **PostgreSQL**:
-  - For structured data like user profiles, portfolios, stock data, transactions, and leaderboard.
-  - Advantages: ACID compliance, support for complex queries, relational integrity.
-
-- **MongoDB**:
-  - For unstructured or semi-structured data like stock news, discussions, and user achievements.
-  - Advantages: Flexible schema, easy scaling for large datasets like community discussions.
+**Tech Stack**: React 19 + FastAPI + MySQL + Redis + Docker
 
 ---
 
-### **Necessary Tasks**
+## 🏗️ Architecture
 
-#### **1. Stock Page**
-   - **Tasks**:
-     - Fetch stock price and historical data for the past year (using APIs like Alpha Vantage, Yahoo Finance, or Finnhub).
-     - Create visualizations (e.g., line charts, candlestick charts) for historical data.
-     - Display current market trends and basic stock details (sector, market cap, etc.).
-   - **Backend**:
-     - Create an API endpoint for fetching stock data and analytics.
-     - Store cached historical data to reduce API calls.
-   - **Frontend**:
-     - Build a stock page with a responsive UI for charts and stats.
+### System Design
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Frontend (React)                     │
+│                      Port: 3000                              │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+     ┌───────────────┼───────────────┐
+     │               │               │
+┌────▼─────┐  ┌─────▼─────┐  ┌─────▼─────┐
+│   Auth    │  │  Stock    │  │ Watchlist │
+│ Service   │  │  Service  │  │ Service   │
+│ :8000     │  │ :8001     │  │ :8002     │
+└────┬─────┘  └─────┬─────┘  └─────┬─────┘
+     │              │              │
+     └──────────────┼──────────────┘
+                    │
+     ┌──────────────┴──────────────┐
+     │                             │
+┌────▼──────┐              ┌──────▼──────┐
+│  MySQL    │              │   Redis     │
+│ Database  │              │   Cache     │
+│ :3306     │              │   :6379     │
+└───────────┘              └─────────────┘
+```
 
----
+### Microservices Architecture
 
-#### **2. User Portfolio**
-   - **Tasks**:
-     - Allow users to add/remove stocks to/from their portfolio.
-     - Show portfolio breakdown by sectors, allocations, and performance charts.
-     - Calculate total portfolio performance (e.g., weighted averages).
-   - **Backend**:
-     - API endpoints for managing portfolio data.
-     - Calculate aggregated portfolio performance in the backend.
-   - **Frontend**:
-     - Portfolio dashboard with interactive charts (e.g., pie charts for allocations).
-
----
-
-#### **3. Price/Performance Threshold Notifications**
-   - **Tasks**:
-     - Enable users to set notifications for specific stock price thresholds.
-     - Send notifications (email or push) when thresholds are met.
-   - **Backend**:
-     - Create a job scheduler (e.g., Celery with Redis) to monitor stock prices and trigger notifications.
-   - **Frontend**:
-     - Add UI for users to set thresholds and view notification history.
-
----
-
-#### **4. News Integration**
-   - **Tasks**:
-     - Fetch and display stock news (using APIs like NewsAPI or Finnhub).
-     - Filter news based on stocks in the user’s portfolio.
-   - **Backend**:
-     - API integration for fetching stock-related news.
-   - **Frontend**:
-     - News feed UI with filtering options.
+| Service | Port | Purpose | Tech |
+|---------|------|---------|------|
+| **Frontend** | 3000 | User interface | React 19, Tailwind CSS |
+| **Auth Service** | 8000 | User authentication & authorization | FastAPI, JWT |
+| **Stock Service** | 8001 | Stock data, portfolios, analytics | FastAPI, yfinance, pandas |
+| **Watchlist Service** | 8002 | Watchlist & price alerts | FastAPI, WebSocket |
+| **MySQL** | 3306 | Relational data storage | MySQL 8.0 |
+| **Redis** | 6379 | Caching layer (10-min TTL) | Redis 7 |
 
 ---
 
-#### **5. Transaction Simulator**
-   - **Tasks**:
-     - Allow users to simulate stock purchases/sales.
-     - Track and display hypothetical portfolio growth.
-   - **Backend**:
-     - API endpoints to simulate buy/sell operations.
-     - Store simulation data separately from real portfolio data.
-   - **Frontend**:
-     - Simulator UI with input fields for transaction details.
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker & Docker Compose installed
+- Git
+
+### Setup & Run
+
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd portfolio_app
+
+# 2. Start all services
+docker-compose up --build
+
+# 3. Access the app
+# Frontend:     http://localhost:3000
+# Auth API:     http://localhost:8000/docs
+# Stock API:    http://localhost:8001/docs
+# Watchlist API: http://localhost:8002/docs
+```
+
+### Initial Setup
+
+1. **Create a user** at `http://localhost:3000/register`
+2. **Update user role** (make admin):
+   ```bash
+   docker exec -it portfolio_mysql mysql -u root -proot Portfolio_Management
+   UPDATE users SET role = 'admin' WHERE username = 'your_username';
+   EXIT;
+   ```
+3. **Add stocks** using admin credentials:
+   ```bash
+   curl -X POST "http://localhost:8001/api/stocks/?stock_symbol=AAPL" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN"
+   ```
 
 ---
 
-#### **6. Community Discussions**
-   - **Tasks**:
-     - Enable users to create, read, and reply to discussion threads.
-   - **Backend**:
-     - NoSQL database for discussion storage.
-     - API endpoints for CRUD operations on threads and comments.
-   - **Frontend**:
-     - Forum-like interface for creating and viewing discussions.
+## 📁 Project Structure
+
+```
+portfolio_app/
+├── frontend/                          # React application
+│   ├── public/
+│   ├── src/
+│   │   ├── components/               # Reusable React components
+│   │   ├── pages/                    # Page components
+│   │   ├── services/                 # API service classes
+│   │   ├── context/                  # React Context (Auth)
+│   │   └── App.js
+│   ├── Dockerfile
+│   └── package.json
+│
+├── Backend/
+│   ├── authentication_service/       # User auth & login
+│   │   ├── main.py
+│   │   ├── models/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   └── Dockerfile
+│   │
+│   ├── stock_service/                # Stock data & portfolios
+│   │   ├── main.py
+│   │   ├── models/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   │   ├── cache.py             # Redis caching logic
+│   │   │   └── db_context.py
+│   │   └── Dockerfile
+│   │
+│   └── watchlist_service/            # Watchlists & alerts
+│       ├── main.py
+│       ├── models/
+│       ├── controllers/
+│       ├── services/
+│       ├── utils/
+│       └── Dockerfile
+│
+├── docker-compose.yml                # Container orchestration
+├── requirements.txt                  # Python dependencies
+├── .env                             # Environment variables
+├── REDIS_GUIDE.md                   # Redis caching guide
+├── CLAUDE_GUIDE.md                  # Claude Code guide (this file)
+└── README.md                        # This file
+
+```
 
 ---
 
-#### **7. Leaderboard**
-   - **Tasks**:
-     - Rank users based on their simulated portfolio performance.
-   - **Backend**:
-     - Periodically calculate and update rankings in the database.
-     - API endpoint to fetch leaderboard data.
-   - **Frontend**:
-     - Leaderboard UI with filters (e.g., weekly, monthly).
+## 🔑 Key Features
+
+### 1. **Authentication & Authorization**
+- JWT-based authentication
+- Role-based access control (Admin, Moderator, User)
+- Secure password hashing with passlib
+
+### 2. **Stock Management**
+- Add stocks to system (admin only)
+- Real-time price fetching from Yahoo Finance
+- Historical price data
+- Financial analytics (quarterly data)
+  - Income statements (revenue, profit, EPS)
+  - Balance sheets (assets, liabilities, equity)
+  - Cash flow statements
+
+### 3. **Portfolio Management**
+- Create multiple portfolios per user
+- Add/remove stock holdings
+- Track cost basis and quantity
+- Real-time portfolio valuation
+- Sector breakdown analysis
+
+### 4. **Watchlists & Alerts**
+- Create custom watchlists
+- Real-time price monitoring (WebSocket)
+- Set price alerts/thresholds
+- Receive notifications on targets
+
+### 5. **Caching Strategy**
+- Redis in-memory cache (10-minute TTL)
+- Caches: stock info, prices, historical data
+- Reduces Yahoo Finance API calls by ~90%
+- See [REDIS_GUIDE.md](REDIS_GUIDE.md) for details
+
+### 6. **UI/UX**
+- Dark/Light theme toggle
+- Responsive design (mobile-friendly)
+- Real-time data visualization
+- Smooth animations
 
 ---
 
-#### **8. Dark Mode**
-   - **Tasks**:
-     - Add a toggle for light/dark mode in the UI.
-   - **Frontend**:
-     - Use CSS variables or a UI framework with built-in dark mode support.
+## 🔗 API Endpoints
+
+### Authentication Service (Port 8000)
+
+```bash
+POST   /auth/register        # Register new user
+POST   /auth/login           # Login & get JWT token
+GET    /auth/user            # Get current user info
+POST   /auth/refresh         # Refresh token
+```
+
+### Stock Service (Port 8001)
+
+```bash
+# Stock Management
+POST   /api/stocks/                    # Add stock (admin only)
+GET    /api/stocks/                    # Get all stocks
+GET    /api/stocks/{symbol}            # Get stock details
+GET    /api/stocks/{symbol}/info       # Get stock info (Yahoo Finance)
+GET    /api/stocks/{symbol}/price      # Get current price
+
+# Portfolio Management
+POST   /api/stocks/portfolios          # Create portfolio
+GET    /api/stocks/portfolios/{id}     # Get portfolio
+GET    /api/stocks/portfolios/user/{id} # Get user portfolios
+POST   /api/stocks/portfolios/{id}/add/holdings  # Add stock to portfolio
+DELETE /api/stocks/portfolios/holdings/{id}     # Remove stock
+
+# Financial Data
+GET    /api/stocks/financials/{symbol}          # Income statement
+GET    /api/stocks/balance-sheet/{symbol}       # Balance sheet
+GET    /api/stocks/cash-flow/{symbol}           # Cash flow
+```
+
+### Watchlist Service (Port 8002)
+
+```bash
+POST   /api/watchlists/               # Create watchlist
+GET    /api/watchlists/user/{id}      # Get user's watchlists
+POST   /api/watchlists/{id}/items     # Add item to watchlist
+GET    /api/watchlists/{id}/items     # Get watchlist items
+WS     /ws/{user_id}                  # WebSocket for real-time alerts
+```
+
+Full API documentation available at:
+- `http://localhost:8000/docs` (Swagger UI)
+- `http://localhost:8001/docs`
+- `http://localhost:8002/docs`
 
 ---
 
-#### **Future Educational Concepts**
-   - **Achievements**: Backend to track user milestones and a frontend to display badges.
-   - **Quizzes**: API for quiz questions and a UI for quiz interactions.
-   - **Beginner Guides**: Static or dynamically fetched guides with interactive sections.
-   - **Historical Events**: Database for historical data and visualizations for impactful events.
+## 🗄️ Database Schema
+
+### Core Tables
+
+**users**
+```sql
+- user_id (PK)
+- username (unique)
+- email (unique)
+- password (hashed)
+- first_name
+- last_name
+- role (admin, moderator, user)
+- created_at
+```
+
+**stocks**
+```sql
+- stock_symbol (PK)
+- name
+- sector_id (FK)
+- market_cap
+- last_updated
+```
+
+**portfolios**
+```sql
+- portfolio_id (PK)
+- user_id (FK)
+- name
+- created_at
+```
+
+**portfolio_holdings**
+```sql
+- holding_id (PK)
+- portfolio_id (FK)
+- stock_symbol (FK)
+- quantity
+- average_price
+- added_at
+```
+
+**financials**
+```sql
+- id (PK)
+- stock_symbol (FK)
+- quarter
+- revenue
+- gross_profit
+- net_profit
+- eps
+- operating_margin
+```
 
 ---
 
-### **General Workflow**
+## 💾 Caching Strategy
 
-1. **Backend Development**:
-   - Set up PostgreSQL for structured data and MongoDB for unstructured data.
-   - Design API endpoints for each feature (e.g., `/stocks`, `/portfolio`, `/news`, `/notifications`).
-   - Implement background jobs (e.g., for notifications, leaderboard updates).
+### Why Redis?
+- **Read-heavy app**: Stock prices queried frequently
+- **Performance**: In-memory cache is ~100x faster than DB
+- **API efficiency**: Reduces Yahoo Finance API calls
 
-2. **Frontend Development**:
-   - Use React/Angular/Vue.js for the UI.
-   - Integrate frontend with backend APIs.
-   - Use charting libraries like Chart.js or D3.js for visualizations.
+### Cache Structure
 
-3. **Testing**:
-   - Write unit tests for backend APIs and frontend components.
-   - Perform integration and UI testing for a seamless experience.
+```
+stock_info:AAPL.IS → {sector, market_cap, website, ...}
+stock_price:MSFT.IS → 380.50
+stock_prices:GOOGL.IS:2024-01-01:2024-12-31 → [{date, price}, ...]
 
-4. **Deployment**:
-   - Host the backend on platforms like AWS, Heroku, or Google Cloud.
-   - Host the frontend on platforms like Netlify or Vercel.
+TTL: 600 seconds (10 minutes)
+```
 
-5. **Documentation**:
-   - Create detailed user guides and developer documentation.
+### Cache Flow
+
+```
+Request → Check Redis → Hit? Return ⚡
+                ↓ Miss
+            Yahoo Finance API
+                ↓
+            Store in Redis
+                ↓
+            Return to Client
+```
+
+See [REDIS_GUIDE.md](REDIS_GUIDE.md) for monitoring and management.
+
+---
+
+## 🔐 Security
+
+### Authentication
+- **JWT Tokens**: Secure token-based auth
+- **Password Hashing**: Using passlib with bcrypt
+- **Token Expiration**: Automatic refresh mechanism
+
+### Authorization
+- **Role-Based Access Control**: Admin, Moderator, User roles
+- **API Protection**: Critical endpoints require authentication
+- **CORS**: Configured for frontend integration
+
+### Best Practices
+- Environment variables for secrets (.env file)
+- No hardcoded credentials
+- Password validation
+- Secure database connections
+
+---
+
+## 📊 Database Relationships
+
+```
+┌──────────────┐
+│    Users     │
+└──────┬───────┘
+       │ 1:N
+       │
+┌──────▼───────┐
+│ Portfolios   │
+└──────┬───────┘
+       │ 1:N
+       │
+┌──────▼──────────────┐
+│Portfolio_Holdings   │
+└──────┬──────────────┘
+       │ N:1
+       │
+┌──────▼───────┐
+│   Stocks     │
+└──────┬───────┘
+       │ N:1
+       │
+┌──────▼───────┐
+│  Sectors     │
+└──────────────┘
+
+Stocks also have:
+- Financials (1:N)
+- BalanceSheets (1:N)
+- CashFlows (1:N)
+- Dividends (1:N)
+- StockPrices (1:N)
+```
+
+---
+
+## 🛠️ Development
+
+### Running Locally (Without Docker)
+
+```bash
+# Frontend
+cd frontend
+npm install
+npm start
+
+# Backend (Python - each service)
+cd Backend/authentication_service
+pip install -r ../../requirements.txt
+python main.py
+
+# Repeat for other services with different ports
+```
+
+### Making Code Changes
+
+1. Modify code in your IDE
+2. Hot reload (frontend) or restart service (backend)
+3. Test via Swagger UI at respective `/docs` endpoints
+
+### Adding New Stocks
+
+```bash
+# As admin user
+curl -X POST "http://localhost:8001/api/stocks/?stock_symbol=TSLA" \
+  -H "Authorization: Bearer $JWT_TOKEN"
+```
+
+Supported symbols: Any stock listed on Yahoo Finance (use symbol alone, .IS suffix added automatically for Turkish stocks).
+
+---
+
+## 🐛 Troubleshooting
+
+### Services Won't Start
+```bash
+# Check logs
+docker-compose logs -f stock_service
+
+# Rebuild everything
+docker-compose down
+docker volume rm portfolio_app_mysql_data
+docker-compose up --build
+```
+
+### Database Issues
+```bash
+# Access MySQL
+docker exec -it portfolio_mysql mysql -u root -proot Portfolio_Management
+
+# Check tables
+SHOW TABLES;
+DESCRIBE users;
+```
+
+### Redis Not Caching
+```bash
+# Check Redis
+docker exec -it portfolio_redis redis-cli
+KEYS *
+
+# Check cache logs
+docker logs stock_service | grep "Cache"
+```
+
+### Port Conflicts
+If ports 3000, 8000, 8001, 8002, 3306, 6379 are taken:
+1. Update `docker-compose.yml` port mappings
+2. Update frontend API URLs in environment variables
+
+---
+
+## 📈 Performance Optimization
+
+### Current Optimizations
+1. ✅ Redis caching (10-min TTL)
+2. ✅ Lazy loading on frontend
+3. ✅ Indexed database queries
+4. ✅ Connection pooling
+
+### Future Improvements
+- [ ] Database query optimization
+- [ ] Frontend code splitting
+- [ ] API response pagination
+- [ ] GraphQL instead of REST
+- [ ] Real-time updates via WebSocket for prices
+- [ ] Compression (gzip)
+
+---
+
+## 🚢 Deployment
+
+### Docker Deployment Ready
+This app is fully containerized and ready for deployment to:
+- AWS ECS
+- Google Cloud Run
+- Azure Container Instances
+- Kubernetes (K8s)
+- Heroku with Docker
+
+```bash
+# Push to registry
+docker tag stock-service:latest your-registry/stock-service:latest
+docker push your-registry/stock-service:latest
+
+# Deploy on cloud platform of choice
+```
+
+---
+
+## 📚 Documentation
+
+- **[REDIS_GUIDE.md](REDIS_GUIDE.md)**: Complete Redis caching guide
+- **[CLAUDE_GUIDE.md](CLAUDE_GUIDE.md)**: Claude Code integration guide
+- **API Docs**: Available at `http://localhost:{port}/docs` (Swagger UI)
+
+---
+
+## 🤝 Contributing
+
+1. Create a branch: `git checkout -b feature/your-feature`
+2. Make changes and test
+3. Commit: `git commit -m "Add feature"`
+4. Push: `git push origin feature/your-feature`
+5. Create Pull Request
+
+---
+
+## 📝 Environment Variables
+
+Create `.env` file in project root:
+
+```env
+# Database
+DB_USER=root
+DB_PASSWORD=root
+DATABASE_URL=mysql+pymysql://root:root@mysql:3306/Portfolio_Management
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# API URLs (for frontend)
+REACT_APP_AUTH_API=http://localhost:8000
+REACT_APP_STOCK_API=http://localhost:8001
+REACT_APP_WATCHLIST_API=http://localhost:8002
+
+# JWT
+SECRET_KEY=your-secret-key-here
+ALGORITHM=HS256
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see LICENSE file for details.
+
+---
+---
+

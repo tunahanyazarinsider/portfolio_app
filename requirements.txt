@@ -10,3 +10,4 @@ python-jose
 PyJWT
 cryptography
 email-validator
+redis

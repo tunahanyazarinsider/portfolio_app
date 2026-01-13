@@ -8,6 +8,7 @@ from datetime import datetime  # New import
 import pandas as pd
 from models.models import *
 from datetime import timedelta
+from utils.cache import cache
 
 class StockService:
     def __init__(self, db: Session):
@@ -107,10 +108,21 @@ class StockService:
         # add .IS to the end of the stock symbol since yahoo finance excepts that
         stock_symbol += ".IS"
 
+        # Check cache first
+        cache_key = f"stock_info:{stock_symbol}"
+        cached_info = cache.get_cache(cache_key)
+        if cached_info:
+            print(f"✓ Cache hit for {cache_key}")
+            return cached_info
+
+        # Cache miss - fetch from Yahoo Finance
         stock = yf.Ticker(stock_symbol)
         info = stock.info
+
+        # Store in cache with 10-minute TTL
+        cache.set_cache(cache_key, info, ttl=600)
         return info
-    
+
     def get_sector_of_stock(self, symbol: str) -> Optional[Sector]:
         symbol = symbol.upper() # Ensure symbol is uppercase
         stock = self.db.query(Stock).filter(Stock.stock_symbol == symbol).first()
@@ -253,9 +265,23 @@ class StockService:
             stock_symbol = stock_symbol.upper()
             # add .IS to the end of the stock symbol since yahoo finance excepts that
             stock_symbol += ".IS"
+
+            # Check cache first
+            cache_key = f"stock_price:{stock_symbol}"
+            cached_price = cache.get_cache(cache_key)
+            if cached_price is not None:
+                print(f"✓ Cache hit for {cache_key}")
+                return cached_price
+
+            # Cache miss - fetch from Yahoo Finance
             stock = yf.Ticker(stock_symbol)
             info = stock.info
             current_price = info.get("currentPrice", None)
+
+            # Store in cache with 10-minute TTL
+            if current_price is not None:
+                cache.set_cache(cache_key, current_price, ttl=600)
+
             return current_price
         except Exception as e:
             print(f"An error occurred while fetching stock price: {e}")
