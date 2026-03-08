@@ -6,7 +6,7 @@ from typing import List, Optional
 from utils.db_context import get_db
 from services.stock_service import StockService
 from models.models import *
-from models.pydantic_models import *
+from models.pydantic_models import *  # includes OHLCResponse
 from utils.authentication_utils import verify_role # this function checks the token and returns the username if the token is legit
 
 router = APIRouter(
@@ -256,6 +256,12 @@ example output:
     }
 ]
 """
+@router.post("/ohlc-range", response_model=List[OHLCResponse])
+def get_stock_ohlc(request: StockPriceInRangeRequest, db: Session = Depends(get_db)):
+    stock_service = StockService(db)
+    ohlc = stock_service.get_stock_ohlc_in_range(request.stock_symbol, request.start_date, request.end_date)
+    return ohlc
+
 @router.post("/prices-range", response_model=List[StockPriceResponse])
 def get_stock_prices(request: StockPriceInRangeRequest, db: Session = Depends(get_db)):
     stock_service = StockService(db)

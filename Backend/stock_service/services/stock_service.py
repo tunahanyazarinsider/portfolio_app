@@ -286,6 +286,28 @@ class StockService:
         except Exception as e:
             print(f"An error occurred while fetching stock price: {e}")
 
+
+    def get_stock_ohlc_in_range(self, stock_symbol: str, start_date: str, end_date: str):
+        """Retrieve OHLC candlestick data for a given stock symbol and date range."""
+        try:
+            stock_symbol = stock_symbol.upper() + '.IS'
+            stock = yf.Ticker(stock_symbol)
+            stock_data = stock.history(start=start_date, end=end_date)
+            ohlc_data = []
+            for date_idx, row in stock_data.iterrows():
+                ohlc_data.append({
+                    'time': date_idx.strftime('%Y-%m-%d'),
+                    'open': round(float(row['Open']), 2),
+                    'high': round(float(row['High']), 2),
+                    'low': round(float(row['Low']), 2),
+                    'close': round(float(row['Close']), 2),
+                    'volume': round(float(row['Volume']), 0) if 'Volume' in row else None,
+                })
+            return ohlc_data
+        except Exception as e:
+            print(f'An error occurred while fetching OHLC data: {e}')
+            return []
+
     # Function to get close price of a stock for a given date range using yahoo finance
     def get_stock_price_in_range(self, stock_symbol: str, start_date: str, end_date: str) -> List[StockPrice]:
         """

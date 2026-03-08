@@ -169,3 +169,13 @@ class PaginatedStockResponse(BaseModel):
     page: int
     pages: int
     limit: int
+
+
+class OHLCResponse(BaseModel):
+    """OHLC candlestick data point"""
+    time: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: Optional[float] = None
