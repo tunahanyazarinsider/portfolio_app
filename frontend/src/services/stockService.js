@@ -231,6 +231,16 @@ const stockService = {
     }
   },
 
+  // Get OHLC candlestick data for a date range
+  getStockOHLC: async (request) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/ohlc-range`, request);
+      return response.data;
+    } catch (error) {
+      throw error.response.data;
+    }
+  },
+
   getFinancialData: async (symbol) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/financials/${symbol}`);

@@ -18,7 +18,6 @@ import {
   Schedule,
   Timeline
 } from '@mui/icons-material';
-import TechnicalAnalysisChart from './TechnicalAnalysisChart';
 import stockService from '../services/stockService';
 
 const StockPriceSection = ({ symbol, stockInfo, stock, price, loading }) => {
@@ -272,7 +271,7 @@ const StockPriceSection = ({ symbol, stockInfo, stock, price, loading }) => {
         </Grid>
       </Grid>
 
-      <TechnicalAnalysisChart symbol={symbol} />
+      {/* TechnicalAnalysisChart temporarily removed - will be re-added with lightweight-charts */}
     </Paper>
   );
 };

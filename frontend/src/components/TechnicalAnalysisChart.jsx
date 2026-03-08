@@ -1,128 +1,198 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Box,
-  Paper,
   IconButton,
   Tooltip,
   ButtonGroup,
-  useTheme
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  CircularProgress,
+  useTheme,
 } from '@mui/material';
 import {
   ShowChart,
   CandlestickChart,
 } from '@mui/icons-material';
+import { createChart, ColorType, CrosshairMode } from 'lightweight-charts';
 import { useThemeMode } from '../context/ThemeContext';
+import stockService from '../services/stockService';
 
-let tvScriptLoadingPromise;
+const TIME_RANGES = [
+  { label: '1W', value: '1W' },
+  { label: '1M', value: '1M' },
+  { label: '3M', value: '3M' },
+  { label: '6M', value: '6M' },
+  { label: '1Y', value: '1Y' },
+  { label: 'ALL', value: 'ALL' },
+];
+
+const getStartDate = (range) => {
+  const now = new Date();
+  switch (range) {
+    case '1W': return new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
+    case '1M': return new Date(now.setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
+    case '3M': return new Date(now.setMonth(now.getMonth() - 3)).toISOString().split('T')[0];
+    case '6M': return new Date(now.setMonth(now.getMonth() - 6)).toISOString().split('T')[0];
+    case '1Y': return new Date(now.setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
+    case 'ALL': return '2015-01-01';
+    default: return new Date(now.setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
+  }
+};
 
 const TechnicalAnalysisChart = ({ symbol }) => {
   const theme = useTheme();
   const { mode } = useThemeMode();
   const [chartType, setChartType] = useState('candlestick');
-  const widgetRef = useRef(null);
-  const onLoadScriptRef = useRef();
+  const [timeRange, setTimeRange] = useState('6M');
+  const [ohlcData, setOhlcData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const seriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
 
-  const handleChartTypeChange = (type) => {
-    setChartType(type);
-    createWidget(mode, type);
-  };
-
-  useEffect(() => {
-    onLoadScriptRef.current = () => createWidget(mode, chartType);
-
-    if (!tvScriptLoadingPromise) {
-      tvScriptLoadingPromise = new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/tv.js';
-        script.type = 'text/javascript';
-        script.onload = resolve;
-        document.head.appendChild(script);
+  // Fetch OHLC data
+  const fetchData = useCallback(async () => {
+    if (!symbol) return;
+    setLoading(true);
+    try {
+      const startDate = getStartDate(timeRange);
+      const endDate = new Date().toISOString().split('T')[0];
+      const data = await stockService.getStockOHLC({
+        stock_symbol: symbol,
+        start_date: startDate,
+        end_date: endDate,
       });
+      setOhlcData(data || []);
+    } catch (err) {
+      console.error('Failed to fetch OHLC data:', err);
+      setOhlcData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [symbol, timeRange]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Create / update chart
+  useEffect(() => {
+    if (!chartContainerRef.current || ohlcData.length === 0) return;
+
+    const isDark = mode === 'dark';
+    const bgColor = isDark ? '#111827' : '#ffffff';
+    const textColor = isDark ? '#8b95a5' : '#6b7280';
+    const gridColor = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+    const borderColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const upColor = '#00d4aa';
+    const downColor = '#ff5252';
+
+    // Destroy previous chart
+    if (chartRef.current) {
+      chartRef.current.remove();
+      chartRef.current = null;
     }
 
-    tvScriptLoadingPromise.then(() => onLoadScriptRef.current && onLoadScriptRef.current());
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: bgColor },
+        textColor: textColor,
+        fontFamily: '"DM Sans", sans-serif',
+        fontSize: 12,
+      },
+      grid: {
+        vertLines: { color: gridColor },
+        horzLines: { color: gridColor },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: { color: isDark ? 'rgba(0,212,170,0.3)' : 'rgba(13,147,115,0.3)', width: 1, style: 2 },
+        horzLine: { color: isDark ? 'rgba(0,212,170,0.3)' : 'rgba(13,147,115,0.3)', width: 1, style: 2 },
+      },
+      rightPriceScale: {
+        borderColor: borderColor,
+        scaleMargins: { top: 0.1, bottom: 0.2 },
+      },
+      timeScale: {
+        borderColor: borderColor,
+        timeVisible: false,
+        rightOffset: 5,
+        barSpacing: chartType === 'candlestick' ? 6 : 3,
+      },
+      handleScroll: { vertTouchDrag: false },
+    });
+
+    chartRef.current = chart;
+
+    // Add main series
+    if (chartType === 'candlestick') {
+      const series = chart.addCandlestickSeries({
+        upColor: upColor,
+        downColor: downColor,
+        borderUpColor: upColor,
+        borderDownColor: downColor,
+        wickUpColor: upColor,
+        wickDownColor: downColor,
+      });
+      series.setData(ohlcData.map(d => ({
+        time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
+      })));
+      seriesRef.current = series;
+    } else {
+      const series = chart.addAreaSeries({
+        lineColor: upColor,
+        topColor: isDark ? 'rgba(0,212,170,0.28)' : 'rgba(13,147,115,0.2)',
+        bottomColor: isDark ? 'rgba(0,212,170,0.02)' : 'rgba(13,147,115,0.02)',
+        lineWidth: 2,
+      });
+      series.setData(ohlcData.map(d => ({ time: d.time, value: d.close })));
+      seriesRef.current = series;
+    }
+
+    // Add volume histogram
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'volume',
+    });
+    chart.priceScale('volume').applyOptions({
+      scaleMargins: { top: 0.85, bottom: 0 },
+    });
+    volumeSeries.setData(ohlcData.map(d => ({
+      time: d.time,
+      value: d.volume || 0,
+      color: d.close >= d.open
+        ? (isDark ? 'rgba(0,212,170,0.2)' : 'rgba(13,147,115,0.15)')
+        : (isDark ? 'rgba(255,82,82,0.2)' : 'rgba(220,38,38,0.15)'),
+    })));
+    volumeSeriesRef.current = volumeSeries;
+
+    chart.timeScale().fitContent();
+
+    // Resize observer
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      chart.applyOptions({ width, height });
+    });
+    resizeObserver.observe(chartContainerRef.current);
 
     return () => {
-      onLoadScriptRef.current = null;
-    };
-  }, [symbol, mode, chartType]);
-
-  function createWidget(themeMode = 'dark', chartStyle = 'candlestick') {
-    if (document.getElementById('technical-analysis-chart') && 'TradingView' in window) {
-      if (widgetRef.current) {
-        document.getElementById('technical-analysis-chart').innerHTML = '';
+      resizeObserver.disconnect();
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
       }
-
-      const chartStyles = {
-        candlestick: 1,
-        line: 3,
-      };
-
-      const isDark = themeMode === 'dark';
-
-      widgetRef.current = new window.TradingView.widget({
-        autosize: true,
-        symbol: `BIST:${symbol}`,
-        interval: "D",
-        timezone: "Europe/Istanbul",
-        theme: isDark ? 'dark' : 'light',
-        style: chartStyles[chartStyle],
-        locale: "tr",
-        toolbar_bg: isDark ? "#111827" : "#ffffff",
-        enable_publishing: false,
-        allow_symbol_change: false,
-        container_id: "technical-analysis-chart",
-        hide_top_toolbar: false,
-        hide_side_toolbar: false,
-        withdateranges: true,
-        studies: [
-          "MASimple@tv-basicstudies",
-          "RSI@tv-basicstudies",
-          "MACD@tv-basicstudies",
-          "StochasticRSI@tv-basicstudies",
-          "VolumeProfil@tv-basicstudies"
-        ],
-        disabled_features: [
-          "use_localstorage_for_settings",
-          "header_symbol_search",
-          "symbol_search_hot_key",
-          "header_compare",
-        ],
-        enabled_features: [
-          "study_templates",
-          "create_volume_indicator_by_default",
-          "side_toolbar_in_fullscreen_mode",
-          "show_chart_property_page",
-          "hide_last_na_study_output"
-        ],
-        overrides: {
-          "mainSeriesProperties.candleStyle.upColor": "#00d4aa",
-          "mainSeriesProperties.candleStyle.downColor": "#ff5252",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#00d4aa",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#ff5252",
-          "mainSeriesProperties.candleStyle.borderUpColor": "#00d4aa",
-          "mainSeriesProperties.candleStyle.borderDownColor": "#ff5252",
-          "scalesProperties.textColor": isDark ? "#8b95a5" : "#6b7280",
-          "paneProperties.backgroundType": "solid",
-          "paneProperties.background": isDark ? "#111827" : "#ffffff",
-          "paneProperties.gridProperties.color": isDark ? "#1a2035" : "#f3f4f6",
-          "mainSeriesProperties.showPriceLine": true,
-        },
-        loading_screen: {
-          backgroundColor: isDark ? "#111827" : "#ffffff",
-          foregroundColor: isDark ? "#00d4aa" : "#0d9373",
-        },
-      });
-    }
-  }
+    };
+  }, [ohlcData, mode, chartType]);
 
   return (
     <Box sx={{ mt: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1.5, gap: 0.5 }}>
+      {/* Controls row */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+        {/* Chart type toggle */}
         <ButtonGroup size="small" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
           <Tooltip title="Candlestick">
             <IconButton
-              onClick={() => handleChartTypeChange('candlestick')}
+              onClick={() => setChartType('candlestick')}
               sx={{
                 borderRadius: '8px 0 0 8px',
                 color: chartType === 'candlestick' ? 'primary.main' : 'text.secondary',
@@ -136,7 +206,7 @@ const TechnicalAnalysisChart = ({ symbol }) => {
           </Tooltip>
           <Tooltip title="Line">
             <IconButton
-              onClick={() => handleChartTypeChange('line')}
+              onClick={() => setChartType('line')}
               sx={{
                 borderRadius: '0 8px 8px 0',
                 color: chartType === 'line' ? 'primary.main' : 'text.secondary',
@@ -149,20 +219,68 @@ const TechnicalAnalysisChart = ({ symbol }) => {
             </IconButton>
           </Tooltip>
         </ButtonGroup>
+
+        {/* Time range toggle */}
+        <ToggleButtonGroup
+          value={timeRange}
+          exclusive
+          onChange={(e, val) => val && setTimeRange(val)}
+          size="small"
+          sx={{
+            '& .MuiToggleButton-root': {
+              border: '1px solid',
+              borderColor: 'divider',
+              color: 'text.secondary',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              px: 1.5,
+              py: 0.5,
+              fontFamily: '"DM Sans", sans-serif',
+              '&.Mui-selected': {
+                color: 'primary.main',
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0,212,170,0.1)' : 'rgba(13,147,115,0.08)',
+                borderColor: 'primary.main',
+              },
+            },
+          }}
+        >
+          {TIME_RANGES.map(r => (
+            <ToggleButton key={r.value} value={r.value}>{r.label}</ToggleButton>
+          ))}
+        </ToggleButtonGroup>
       </Box>
 
+      {/* Chart container */}
       <Box
-        id="technical-analysis-chart"
         sx={{
-          height: '600px',
+          height: '500px',
           width: '100%',
           borderRadius: '12px',
           overflow: 'hidden',
           border: '1px solid',
           borderColor: 'divider',
-          '& iframe': { border: 'none' },
+          position: 'relative',
+          backgroundColor: theme.palette.mode === 'dark' ? '#111827' : '#ffffff',
         }}
-      />
+      >
+        {loading && (
+          <Box sx={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 2, backgroundColor: theme.palette.mode === 'dark' ? 'rgba(17,24,39,0.8)' : 'rgba(255,255,255,0.8)',
+          }}>
+            <CircularProgress size={32} sx={{ color: 'primary.main' }} />
+          </Box>
+        )}
+        {!loading && ohlcData.length === 0 && (
+          <Box sx={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 2,
+          }}>
+            <Typography color="text.secondary">No chart data available for {symbol}</Typography>
+          </Box>
+        )}
+        <Box ref={chartContainerRef} sx={{ width: '100%', height: '100%' }} />
+      </Box>
     </Box>
   );
 };

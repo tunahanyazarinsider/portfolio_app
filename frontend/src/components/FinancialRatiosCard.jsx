@@ -1,28 +1,27 @@
 import React from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
+import {
+  Card,
+  CardContent,
+  Typography,
+  Grid,
   Divider,
   Box
 } from '@mui/material';
-import { 
+import {
   TrendingUp as ProfitabilityIcon,
   AccountBalance as LiquidityIcon,
   AccountBalanceWallet as DebtIcon
 } from '@mui/icons-material';
 
-// one for each type of ratio
 const RatioSection = ({ title, ratios, icon }) => (
   <Box sx={{ mb: 3 }}>
-    <Typography 
-      variant="subtitle1" 
-      sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        fontWeight: 'bold',
-        mb: 2 
+    <Typography
+      variant="subtitle1"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        fontWeight: 700,
+        mb: 2
       }}
     >
       {icon}
@@ -35,7 +34,7 @@ const RatioSection = ({ title, ratios, icon }) => (
             <Typography variant="body2" color="text.secondary">
               {ratio.label}
             </Typography>
-            <Typography variant="body1" fontWeight="bold">
+            <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
               {ratio.value}
             </Typography>
           </Grid>
@@ -85,59 +84,24 @@ const FinancialRatiosCard = ({ stockInfo }) => {
   ];
 
   return (
-    <Card elevation={4} sx={{ 
-      background: 'linear-gradient(135deg, #f6f8f9 0%, #e5ebee 100%)',
-      height: '100%'
-    }}>
+    <Card elevation={0} sx={{ height: '100%' }}>
       <CardContent>
-        <Typography 
-          variant="h6" 
-          gutterBottom 
-          sx={{ 
-            fontWeight: 'bold', 
-            display: 'flex', 
-            alignItems: 'center',
-            mb: 2 
-          }}
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', mb: 2 }}
         >
           Financial Ratios
         </Typography>
         <Divider sx={{ mb: 2 }} />
 
-        
-        {/* Basic Ratios */}
-        <RatioSection 
-          title="Basic Ratios" 
-          ratios={basicRatios} 
-          icon={<ProfitabilityIcon color="primary" />}
-        />
-
+        <RatioSection title="Basic Ratios" ratios={basicRatios} icon={<ProfitabilityIcon color="primary" />} />
         <Divider sx={{ my: 2 }} />
-
-        {/* Profitability Ratios */}
-        <RatioSection 
-          title="Profitability Ratios" 
-          ratios={profitabilityRatios} 
-          icon={<ProfitabilityIcon color="primary" />} 
-        />
-        
+        <RatioSection title="Profitability Ratios" ratios={profitabilityRatios} icon={<ProfitabilityIcon color="primary" />} />
         <Divider sx={{ my: 2 }} />
-        
-        {/* Liquidity Ratios */}
-        <RatioSection 
-          title="Liquidity Ratios" 
-          ratios={liquidityRatios} 
-          icon={<LiquidityIcon color="secondary" />} 
-        />
-        
+        <RatioSection title="Liquidity Ratios" ratios={liquidityRatios} icon={<LiquidityIcon color="secondary" />} />
         <Divider sx={{ my: 2 }} />
-        
-        {/* Debt Ratios */}
-        <RatioSection 
-          title="Debt Ratios" 
-          ratios={debtRatios} 
-          icon={<DebtIcon color="error" />} 
-        />
+        <RatioSection title="Debt Ratios" ratios={debtRatios} icon={<DebtIcon color="error" />} />
       </CardContent>
     </Card>
   );

@@ -112,57 +112,39 @@ const StockPage = () => {
 
         await handleTimeRangeChange('1M');
 
+        const buildChartData = (rows, labelKey, dataKey, label, color) => {
+          if (!rows || rows.length === 0) return null;
+          const values = rows.map(r => r[dataKey]);
+          const hasData = values.some(v => v != null && v !== 0 && !isNaN(v));
+          if (!hasData) return null;
+          return {
+            labels: rows.map(r => r[labelKey]),
+            datasets: [{
+              label,
+              data: values,
+              backgroundColor: `${color}80`,
+              borderColor: color,
+              borderWidth: 0,
+            }],
+          };
+        };
+
         const financialData = await stockService.getFinancialData(stock.stock_symbol);
-        const financialLabels = financialData.map(f => f.quarter);
-
-        const makeChartData = (label, dataKey, color) => ({
-          labels: financialLabels,
-          datasets: [{
-            label,
-            data: financialData.map(f => f[dataKey]),
-            backgroundColor: `${color}80`,
-            borderColor: color,
-            borderWidth: 1,
-          }],
-        });
-
-        setRevenueChartData(makeChartData('Revenue', 'revenue', '#00d4aa'));
-        setOperatingIncomeChartData(makeChartData('Operating Income', 'operating_income', '#7c5cfc'));
-        setOperatingMarginChartData(makeChartData('Operating Margin', 'operating_margin', '#ffc107'));
-        setGrossProfitChartData(makeChartData('Gross Profit', 'gross_profit', '#00b0ff'));
-        setNetProfitChartData(makeChartData('Net Profit', 'net_profit', '#ff5252'));
+        setRevenueChartData(buildChartData(financialData, 'quarter', 'revenue', 'Revenue', '#00d4aa'));
+        setOperatingIncomeChartData(buildChartData(financialData, 'quarter', 'operating_income', 'Operating Income', '#7c5cfc'));
+        setOperatingMarginChartData(buildChartData(financialData, 'quarter', 'operating_margin', 'Operating Margin', '#ffc107'));
+        setGrossProfitChartData(buildChartData(financialData, 'quarter', 'gross_profit', 'Gross Profit', '#00b0ff'));
+        setNetProfitChartData(buildChartData(financialData, 'quarter', 'net_profit', 'Net Profit', '#ff5252'));
 
         const balanceSheetData = await stockService.getBalanceSheetData(stock.stock_symbol);
-        const bsLabels = balanceSheetData.map(b => b.quarter);
-
-        const makeBSChartData = (label, dataKey, color) => ({
-          labels: bsLabels,
-          datasets: [{
-            label,
-            data: balanceSheetData.map(b => b[dataKey]),
-            backgroundColor: `${color}80`,
-            borderColor: color,
-            borderWidth: 1,
-          }],
-        });
-
-        setTotalAssetsChartData(makeBSChartData('Total Assets', 'total_assets', '#00d4aa'));
-        setTotalLiabilitiesChartData(makeBSChartData('Total Liabilities', 'total_liabilities', '#7c5cfc'));
-        setTotalEquityChartData(makeBSChartData('Total Equity', 'total_equity', '#ffc107'));
-        setCurrentAssetsChartData(makeBSChartData('Current Assets', 'current_assets', '#00b0ff'));
-        setCurrentLiabilitiesChartData(makeBSChartData('Current Liabilities', 'current_liabilities', '#ff5252'));
+        setTotalAssetsChartData(buildChartData(balanceSheetData, 'quarter', 'total_assets', 'Total Assets', '#00d4aa'));
+        setTotalLiabilitiesChartData(buildChartData(balanceSheetData, 'quarter', 'total_liabilities', 'Total Liabilities', '#7c5cfc'));
+        setTotalEquityChartData(buildChartData(balanceSheetData, 'quarter', 'total_equity', 'Total Equity', '#ffc107'));
+        setCurrentAssetsChartData(buildChartData(balanceSheetData, 'quarter', 'current_assets', 'Current Assets', '#00b0ff'));
+        setCurrentLiabilitiesChartData(buildChartData(balanceSheetData, 'quarter', 'current_liabilities', 'Current Liabilities', '#ff5252'));
 
         const cashFlowData = await stockService.getCashFlowData(stock.stock_symbol);
-        setFreeCashFlowChartData({
-          labels: cashFlowData.map(c => c.quarter),
-          datasets: [{
-            label: 'Free Cash Flow',
-            data: cashFlowData.map(c => c.free_cash_flow),
-            backgroundColor: '#00d4aa80',
-            borderColor: '#00d4aa',
-            borderWidth: 1,
-          }],
-        });
+        setFreeCashFlowChartData(buildChartData(cashFlowData, 'quarter', 'free_cash_flow', 'Free Cash Flow', '#00d4aa'));
       } catch (error) {
         console.error('Error fetching stock data:', error);
       } finally {
@@ -229,21 +211,27 @@ const StockPage = () => {
         <StockPriceSection symbol={symbol} stockInfo={stockInfo} stock={stock} price={price} loading={loading} />
       </Box>
 
-      <Box ref={generalInfoRef} sx={{ mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <StockOverviewCard stockInfo={stockInfo} />
+      {stockInfo && (
+        <Box ref={generalInfoRef} sx={{ mb: 4 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <StockOverviewCard stockInfo={stockInfo} />
+            </Grid>
           </Grid>
-        </Grid>
-      </Box>
+        </Box>
+      )}
 
-      <Box ref={ratiosRef} sx={{ mb: 4 }}>
-        <FinancialRatiosCard stockInfo={stockInfo} />
-      </Box>
+      {stockInfo && (
+        <Box ref={ratiosRef} sx={{ mb: 4 }}>
+          <FinancialRatiosCard stockInfo={stockInfo} />
+        </Box>
+      )}
 
-      <Box ref={priceRef} sx={{ mb: 4 }}>
-        <StockPriceDetailsCard stockInfo={stockInfo} />
-      </Box>
+      {stockInfo && (
+        <Box ref={priceRef} sx={{ mb: 4 }}>
+          <StockPriceDetailsCard stockInfo={stockInfo} />
+        </Box>
+      )}
 
       <FinancialChartsSection
         revenueChartData={revenueChartData}
