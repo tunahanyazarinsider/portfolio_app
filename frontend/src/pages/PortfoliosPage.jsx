@@ -1,15 +1,3 @@
-// in this page, there will be card with the preview of the portfolio and a button to view the portfolio in detail
-// the card will have the following information:
-// - title
-// - description
-// - pie chart of the portfolio
-// - button to view the portfolio in detail
-
-// for the card, we will call the ../components/Portfolio_Card.jsx component which uses the following props:
-// - portfolio id (to link to the portfolio detail page)
-// to get the info about the portfolios, we will call the ../services/portfolioService.js file which will have the following functions:
-      
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -31,14 +19,8 @@ import AddIcon from '@mui/icons-material/Add';
 import PortfolioCard from '../components/PortfolioCard';
 import portfolioService from '../services/portfolioService';
 import authService from '../services/authService';
-// for theme
-import { useTheme } from '@mui/material/styles';
 
-const CreatePortfolioDialog = ({ 
-  open, 
-  onClose, 
-  onCreatePortfolio 
-}) => {
+const CreatePortfolioDialog = ({ open, onClose, onCreatePortfolio }) => {
   const [portfolioName, setPortfolioName] = useState('');
 
   const handleCreate = () => {
@@ -50,7 +32,7 @@ const CreatePortfolioDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Create New Portfolio</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>Create New Portfolio</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -63,14 +45,9 @@ const CreatePortfolioDialog = ({
           sx={{ mt: 2 }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="secondary">Cancel</Button>
-        <Button 
-          onClick={handleCreate} 
-          color="primary" 
-          variant="contained"
-          disabled={!portfolioName.trim()}
-        >
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} color="inherit">Cancel</Button>
+        <Button onClick={handleCreate} variant="contained" disabled={!portfolioName.trim()}>
           Create
         </Button>
       </DialogActions>
@@ -79,134 +56,64 @@ const CreatePortfolioDialog = ({
 };
 
 const PortfoliosPage = () => {
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
-  const theme = useTheme();
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // Fetch user portfolios whenever the page loads
   useEffect(() => {
     const fetchPortfolios = async () => {
       try {
         const data = await portfolioService.getUserPortfolios(user.user_id);
-        /*
-          It returns an array of portfolios like this:
-            [
-                {
-                    "portfolio_id": 1,
-                    "user_id": 1,
-                    "name": "My Portfolio",
-                    "created_at": "2022-01-01T00:00:00Z"
-                },
-                {
-                    "portfolio_id": 2,
-                    "user_id": 1,
-                    "name": "Tech Stocks",
-                    "created_at": "2022-01-01T00:00:00Z"
-                }, ...
-      */
         setPortfolios(data);
       } catch (err) {
-        setError('Failed to load portfolios. Please try again later.');
+        setError('Failed to load portfolios.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchPortfolios();
   }, []);
 
-  // Create a new portfolio for the user
   const handleCreatePortfolio = async (portfolioName) => {
     try {
       const username = authService.getUsernameFromToken();
       const user = await authService.getUserInformationByUsername(username);
-      const userId = user.user_id;
-
-      await portfolioService.createPortfolio(userId, portfolioName);
-      
-      setSnackbar({
-        open: true,
-        message: 'Portfolio created successfully!',
-        severity: 'success'
-      });
-
-      const data = await portfolioService.getUserPortfolios(userId);
+      await portfolioService.createPortfolio(user.user_id, portfolioName);
+      setSnackbar({ open: true, message: 'Portfolio created successfully!', severity: 'success' });
+      const data = await portfolioService.getUserPortfolios(user.user_id);
       setPortfolios(data);
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to create portfolio. Please try again.',
-        severity: 'error'
-      });
+      setSnackbar({ open: true, message: 'Failed to create portfolio.', severity: 'error' });
     }
   };
 
-  // function to close the snackbar
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') return;
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  // Loading state
   if (loading) {
     return (
-      <Container
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '80vh',
-        }}
-      >
-        <CircularProgress />
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress sx={{ color: 'primary.main' }} />
       </Container>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <Container>
-        <Alert severity="error">{error}</Alert>
+      <Container sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ borderRadius: '10px' }}>{error}</Alert>
       </Container>
     );
   }
 
-  // Normal state
   return (
-    <Container>
-      <Box 
-        sx={{
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 3,
-          marginTop: 3
-        }}
-      >
-        <Typography
-          variant="h4" 
-          sx={{ 
-              fontWeight: 600,
-              background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-              backgroundClip: 'text',
-              color: 'transparent'
-          }}
-        >
+    <Container maxWidth="xl" sx={{ py: 4, pb: { xs: 10, md: 4 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
           My Portfolios
         </Typography>
-        {/* Button to create a new portfolio */}
         <Button
           variant="contained"
-          color="primary"
           startIcon={<AddIcon />}
           onClick={() => setDialogOpen(true)}
         >
@@ -214,64 +121,41 @@ const PortfoliosPage = () => {
         </Button>
       </Box>
 
-        {/* If there are no portfolios, show a message to create a new portfolio */}
       {portfolios.length === 0 ? (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '50vh',
-            textAlign: 'center',
-          }}
-        >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
             You haven't created any portfolios yet
           </Typography>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => setDialogOpen(true)}
-          >
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)}>
             Create Your First Portfolio
           </Button>
         </Box>
       ) : (
         <Grid container spacing={3}>
           {portfolios.map((portfolio) => (
-            <Grid item key={portfolio.portfolio_id} xs={12} sm={6} md={6}>
+            <Grid item key={portfolio.portfolio_id} xs={12} sm={6} md={4}>
               <PortfolioCard portfolio={portfolio} />
             </Grid>
           ))}
         </Grid>
       )}
 
-      {/* Dialog to create a new portfolio, bu normal bir component değil sadece belirli zamanlarda ortaya çıkıyor */}
-      <CreatePortfolioDialog 
+      <CreatePortfolioDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onCreatePortfolio={handleCreatePortfolio}
       />
 
-      {/* Snackbar to show success or error messages -> bazen ortaya çıkıyor bu yüzden jsx de konumu önemli değil */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={handleSnackbarClose}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: '10px' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
-
-      
     </Container>
   );
 };

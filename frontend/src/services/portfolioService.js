@@ -7,7 +7,7 @@ Note that:
 */
 class PortfolioService {
     constructor() {
-        this.apiURL = 'http://localhost:8001/api/stocks';
+        this.apiURL = `${process.env.REACT_APP_STOCK_API || 'http://localhost:8001'}/api/stocks`;
     }
 
     // Create a new portfolio for a user but no holding inside for now

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8002/api/watchlists';
+const API_BASE_URL = `${process.env.REACT_APP_WATCHLIST_API || 'http://localhost:8002'}/api/watchlists`;
 
 const watchlistService = {
   // Create a new watchlist

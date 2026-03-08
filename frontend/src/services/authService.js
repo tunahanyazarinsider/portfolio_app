@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-const Authentication_backend_url = 'http://localhost:8000';
+const Authentication_backend_url = process.env.REACT_APP_AUTH_API || 'http://localhost:8000';
 
 const authService = {
   login: async (username, password) => {
@@ -11,10 +11,7 @@ const authService = {
         password
       });
       // response.data has 2 field: access_token and token_type
-      console.log(response.data.access_token.sub)
-      // token varsa set le
       if (response.data.access_token) {
-        // bunu set etmez isek login olarak kalmayız!
         localStorage.setItem('user', JSON.stringify(response.data));
       } 
       /*

@@ -35,13 +35,11 @@ import watchListService from '../services/watchListService';
 import stockService from '../services/stockService';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// theme
 import { useTheme } from '@mui/material/styles';
 
 const WatchListsPage = () => {
     const navigate = useNavigate();
     const { userId } = useAuth();
-    // theme
     const theme = useTheme();
   
     // State
@@ -155,26 +153,21 @@ const WatchListsPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4, pb: { xs: 10, md: 4 } }}>
       {/* Header */}
-      <Box sx={{ mb: 6, textAlign: 'center' }}>
-        <Typography variant="h3" sx={{
-          fontWeight: 700,
-          mb: 2,
-          background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-          backgroundClip: 'text',
-          color: 'transparent'
-        }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
           My Watchlists
         </Typography>
       </Box>
 
       {/* Search and Create Section */}
-      <Paper elevation={3} sx={{
+      <Paper elevation={0} sx={{
         p: 3,
         mb: 4,
-        background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-        borderRadius: 2
+        borderRadius: '16px',
+        border: '1px solid',
+        borderColor: 'divider',
       }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={8}>
@@ -199,7 +192,7 @@ const WatchListsPage = () => {
               startIcon={<Plus size={20} />}
               onClick={() => setCreateDialogOpen(true)}
               sx={{
-                background: '(${theme.palette.primary.dark})',
+                backgroundColor: 'primary.main',
                 py: 2
               }}
             >
@@ -210,11 +203,11 @@ const WatchListsPage = () => {
       </Paper>
 
       {/* Quick Stats */}
-      <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '16px', border: '1px solid', borderColor: 'divider' }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: '#2563eb', fontWeight: 'bold' }}>
+              <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                 {watchlists.length}
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
@@ -224,7 +217,7 @@ const WatchListsPage = () => {
           </Grid>
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: '#7c3aed', fontWeight: 'bold' }}>
+              <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
                 {Object.values(watchlistStats).reduce((sum, stat) => sum + stat.stockCount, 0)}
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
@@ -234,7 +227,7 @@ const WatchListsPage = () => {
           </Grid>
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ color: '#059669', fontWeight: 'bold' }}>
+              <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
                 {Object.values(watchlistStats).reduce((sum, stat) => sum + stat.activeAlerts, 0)}
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
@@ -336,7 +329,8 @@ const WatchListsPage = () => {
                     endIcon={<ArrowUpRight size={18} />}
                     onClick={() => navigate(`/watchlist/${watchlist.watchlist_id}`)}
                     sx={{
-                      background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
                     }}
                   >
                     View Details
@@ -369,7 +363,7 @@ const WatchListsPage = () => {
             onClick={handleCreateWatchlist}
             variant="contained"
             disabled={!newWatchlistName.trim()}
-            sx={{ background: 'linear-gradient(45deg, #2563eb, #7c3aed)' }}
+            sx={{ backgroundColor: 'primary.main', color: 'primary.contrastText' }}
           >
             Create
           </Button>

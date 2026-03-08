@@ -1,0 +1,6 @@
+sqlalchemy
+pydantic
+fastapi
+uvicorn
+pymysql
+yfinance

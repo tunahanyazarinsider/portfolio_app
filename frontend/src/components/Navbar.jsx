@@ -14,30 +14,38 @@ import {
   ListItem,
   ListItemText,
   CircularProgress,
-  alpha,
   Slide,
   Popover,
-  Badge
+  Badge,
+  Divider,
+  Avatar,
+  Chip
 } from '@mui/material';
-import { AccountCircle, Search as SearchIcon, Close } from '@mui/icons-material';
+import {
+  AccountCircle,
+  Search as SearchIcon,
+  Close,
+  Notifications as NotificationsIcon,
+  LightMode,
+  DarkMode,
+  TrendingUp,
+  Logout,
+  Person,
+  ShowChart,
+  PieChart,
+  Business
+} from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useThemeMode } from '../context/ThemeContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import stockService from '../services/stockService';
-// for notification
-import { Notifications as NotificationsIcon } from "@mui/icons-material";
-
-
-// One cons of having a web connection in the navbar is that connection is re-established every time the user navigates to a new page
-// This is not a big deal for small applications, but for larger applications, it can be a performance issue. 
-// For that reason, it is better to have a WebSocket connection in a separate component that is always rendered, such as the App component.
-// We can do it later. We might pull the notifications in the app content and then pass it to here, navbar.
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { mode, toggleTheme } = useThemeMode();
   const navigate = useNavigate();
-  // anchorEl is used to position the user dropdown menu
-  // if anchorEl is null, the menu is closed
-  // if anchorEl is set to the button element, the menu is opened
+  const location = useLocation();
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -45,38 +53,23 @@ const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
 
-  // for notifications
-  // to keep the notifications and unread count
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0); // Count of unread notifications
-  const socketRef = useRef(null); // Store the WebSocket connection
-  // this anchorEl is used to position the notifications popover
-  // if anchorEl is null, the popover is closed; if it is set to the button element, the popover is opened
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null); // For notifications
-
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
 
   useEffect(() => {
     if (!user) return;
 
     const connectWebSocket = () => {
       socketRef.current = new WebSocket("ws://localhost:8002/ws/" + user.user_id);
-      console.log("Connecting WebSocket...");
 
       socketRef.current.onmessage = (event) => {
-        console.log("New message:", event.data);
-        setNotifications((prev) => {
-          const newNotifications = [event.data, ...prev].slice(0, 10);
-          return newNotifications;
-        });
-        
-        // increment the unread count
+        setNotifications((prev) => [event.data, ...prev].slice(0, 10));
         setUnreadCount((prev) => prev + 1);
       };
 
-      console.log("nofications", notifications);
-
       socketRef.current.onclose = () => {
-        console.log("WebSocket disconnected ❌ Reconnecting...");
         setTimeout(connectWebSocket, 3000);
       };
 
@@ -90,28 +83,21 @@ const Navbar = () => {
     return () => socketRef.current?.close();
   }, [user]);
 
-  const handleOpen = (event) => {
+  const handleNotifOpen = (event) => {
     setNotificationAnchorEl(event.currentTarget);
-    setAnchorEl(null); // Close user menu when opening notifications
-    setUnreadCount(0); // Mark as read when opened
+    setAnchorEl(null);
+    setUnreadCount(0);
   };
 
-  const handleClose = () => setNotificationAnchorEl(null);
-  // end of the notification part
+  const handleNotifClose = () => setNotificationAnchorEl(null);
 
-
-  
   const handleMenuOpen = (event) => {
-    // open the user menu
     setAnchorEl(event.currentTarget);
-    // Close notifications when menu opens 
     setNotificationAnchorEl(null);
-    // Close search when menu opens
     setIsSearchOpen(false);
     setSearchQuery('');
   };
 
-  // close the user menu by setting anchorEl to null
   const handleMenuClose = () => setAnchorEl(null);
 
   const handleSearchChange = (event) => {
@@ -123,13 +109,11 @@ const Navbar = () => {
   const handleSearchClose = () => {
     setIsSearchOpen(false);
     setSearchQuery('');
-    if (searchInputRef.current) {
-      searchInputRef.current.blur();
-    }
+    if (searchInputRef.current) searchInputRef.current.blur();
   };
 
   const handleStockSelect = (stock) => {
-    setSearchQuery(''); // Reset the search input
+    setSearchQuery('');
     setIsSearchOpen(false);
     navigate(`/stocks/${stock.stock_symbol}`);
   };
@@ -155,53 +139,48 @@ const Navbar = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-
-  // notifications part
-
+  // Hide navbar on login/register pages
+  if (['/login', '/register'].includes(location.pathname)) {
+    return null;
+  }
 
   return (
-    <AppBar 
-      position="static" 
-      elevation={0}
-      sx={{
-        background: (theme) => `linear-gradient(to right, ${theme.palette.primary[700]}, ${theme.palette.primary.main})`,
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-      }}
-    >
-      <Toolbar sx={{ height: 60, px: { xs: 2, sm: 4 } }}>
+    <AppBar position="sticky" elevation={0}>
+      <Toolbar sx={{ height: 64, px: { xs: 2, sm: 3 } }}>
         {/* Logo */}
         <Button
           onClick={() => navigate('/dashboard')}
           sx={{
             padding: 0,
+            minWidth: 'auto',
             background: 'transparent',
-            '&:hover': {
-              background: 'transparent',
-            },
+            '&:hover': { background: 'transparent' },
           }}
+          disableRipple
         >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: '0.5px',
-              background: 'linear-gradient(45deg, #ffffff 30%, #e3f2fd 90%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              cursor: 'pointer',
-            }}
-          >
-            Z Investment
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TrendingUp sx={{ color: 'primary.main', fontSize: 28 }} />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                color: 'text.primary',
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              Z<Box component="span" sx={{ color: 'primary.main' }}>invest</Box>
+            </Typography>
+          </Box>
         </Button>
 
         {/* Search Bar */}
         {user && (
-          <Box sx={{ 
-            position: 'relative', 
-            flexGrow: 1, 
-            maxWidth: 600,
-            mx: 'auto'
+          <Box sx={{
+            position: 'relative',
+            flexGrow: 1,
+            maxWidth: 480,
+            mx: { xs: 2, sm: 4 },
           }}>
             <Box
               component="form"
@@ -209,64 +188,54 @@ const Navbar = () => {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                borderRadius: '12px',
-                backgroundColor: (theme) => alpha(theme.palette.common.white, 0.07),
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: (theme) => alpha(theme.palette.common.white, 0.1),
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                },
+                borderRadius: '10px',
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255,255,255,0.05)'
+                    : 'rgba(0,0,0,0.04)',
+                border: '1px solid',
+                borderColor: 'divider',
+                transition: 'all 0.2s ease',
                 '&:focus-within': {
-                  backgroundColor: (theme) => alpha(theme.palette.common.white, 0.15),
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: '0 0 0 4px rgba(255, 255, 255, 0.1)',
-                }
+                  borderColor: 'primary.main',
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255,255,255,0.08)'
+                      : 'rgba(0,0,0,0.02)',
+                  boxShadow: (theme) =>
+                    `0 0 0 3px ${theme.palette.mode === 'dark' ? 'rgba(0,212,170,0.15)' : 'rgba(13,147,115,0.15)'}`,
+                },
               }}
             >
-              <IconButton sx={{ 
-                p: '10px', 
-                color: 'rgba(255, 255, 255, 0.7)',
-                '&:hover': { color: 'white' }
-              }}>
-                <SearchIcon />
-              </IconButton>
+              <SearchIcon sx={{ ml: 1.5, color: 'text.secondary', fontSize: 20 }} />
               <InputBase
                 ref={searchInputRef}
-                placeholder="Search Stocks..."
+                placeholder="Search stocks..."
                 value={searchQuery}
                 onChange={handleSearchChange}
                 sx={{
-                  color: 'white',
+                  color: 'text.primary',
                   width: '100%',
                   '& .MuiInputBase-input': {
-                    padding: '10px 16px',
-                    fontSize: '0.95rem',
+                    padding: '8px 12px',
+                    fontSize: '0.875rem',
                     '&::placeholder': {
-                      color: 'rgba(255, 255, 255, 0.7)',
+                      color: 'text.secondary',
                       opacity: 1,
                     },
                   },
                 }}
               />
               {(loading || (searchQuery && isSearchOpen)) && (
-                <IconButton 
+                <IconButton
                   onClick={handleSearchClose}
-                  sx={{ 
-                    p: '10px', 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&:hover': { color: 'white' }
-                  }}
+                  size="small"
+                  sx={{ mr: 0.5, color: 'text.secondary' }}
                 >
                   {loading ? (
-                    <CircularProgress
-                      size={24}
-                      sx={{
-                        color: 'rgba(255, 255, 255, 0.7)'
-                      }}
-                    />
+                    <CircularProgress size={18} sx={{ color: 'primary.main' }} />
                   ) : (
-                    <Close />
+                    <Close fontSize="small" />
                   )}
                 </IconButton>
               )}
@@ -285,13 +254,13 @@ const Navbar = () => {
                     mt: 1,
                     zIndex: 1300,
                     borderRadius: '12px',
-                    maxHeight: '400px',
+                    maxHeight: '360px',
                     overflowY: 'auto',
-                    backgroundColor: 'background.paper',
-                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    border: '1px solid',
+                    borderColor: 'divider',
                   }}
                 >
-                  <List sx={{ py: 1 }}>
+                  <List sx={{ py: 0.5 }}>
                     {searchResults.map((stock) => (
                       <ListItem
                         button
@@ -300,25 +269,29 @@ const Navbar = () => {
                         sx={{
                           py: 1.5,
                           px: 2,
-                          transition: 'all 0.2s',
+                          transition: 'background 0.15s',
                           '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                          }
+                            backgroundColor: (theme) =>
+                              theme.palette.mode === 'dark'
+                                ? 'rgba(0,212,170,0.08)'
+                                : 'rgba(13,147,115,0.06)',
+                          },
                         }}
                       >
                         <ListItemText
                           primary={
-                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                              {stock.name} 
-                              <Typography component="span" color="primary.main" sx={{ ml: 1, fontWeight: 600 }}>
-                                ({stock.stock_symbol})
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Chip
+                                label={stock.stock_symbol}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                                sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.75rem' }}
+                              />
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {stock.name}
                               </Typography>
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                              Market Cap: {stock.market_cap}
-                            </Typography>
+                            </Box>
                           }
                         />
                       </ListItem>
@@ -330,148 +303,192 @@ const Navbar = () => {
           </Box>
         )}
 
-        {/* Notifications */}
-        {user && (
-          <IconButton color="inherit" onClick={handleOpen}>
-            <Badge badgeContent={unreadCount} color="error">
-              <NotificationsIcon />
-            </Badge>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+          {/* Theme Toggle */}
+          <IconButton
+            onClick={toggleTheme}
+            size="small"
+            sx={{
+              color: 'text.secondary',
+              transition: 'all 0.2s',
+              '&:hover': { color: 'primary.main' },
+            }}
+          >
+            {mode === 'dark' ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
           </IconButton>
-        )}
 
-        {/* Notifications Popover */}
-        {/* anchor el allows us to open and close the drop down menu: if null it means closed, if not, it opens the event.target */}
-        <Popover
-          open={Boolean(notificationAnchorEl)}
-          anchorEl={notificationAnchorEl}
-          onClose={handleClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <Paper sx={{ width: 300, maxHeight: 600, overflowY: "auto" }}>
-            <List>
+          {/* Notifications */}
+          {user && (
+            <IconButton
+              onClick={handleNotifOpen}
+              size="small"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+            >
+              <Badge
+                badgeContent={unreadCount}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    backgroundColor: '#ff5252',
+                    color: '#fff',
+                    fontSize: '0.65rem',
+                    minWidth: 16,
+                    height: 16,
+                  },
+                }}
+              >
+                <NotificationsIcon fontSize="small" />
+              </Badge>
+            </IconButton>
+          )}
+
+          {/* Notifications Popover */}
+          <Popover
+            open={Boolean(notificationAnchorEl)}
+            anchorEl={notificationAnchorEl}
+            onClose={handleNotifClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: { width: 320, maxHeight: 400, mt: 1, borderRadius: '12px' },
+            }}
+          >
+            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Notifications</Typography>
+            </Box>
+            <List sx={{ maxHeight: 300, overflow: 'auto' }}>
               {notifications.length > 0 ? (
                 notifications.map((notif, index) => (
-                  <ListItem key={index}>
-                    <ListItemText primary={notif} />
+                  <ListItem key={index} sx={{ py: 1.5 }}>
+                    <ListItemText
+                      primary={notif}
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
                   </ListItem>
                 ))
               ) : (
                 <ListItem>
-                  <ListItemText primary="No new notifications" />
+                  <ListItemText
+                    primary="No new notifications"
+                    primaryTypographyProps={{ variant: 'body2', color: 'text.secondary', textAlign: 'center' }}
+                  />
                 </ListItem>
               )}
             </List>
-            {/* Text if this is clicked, notifications are cleared */}
-            <Button
-              onClick={() => {
-                setNotifications([]);
-                setUnreadCount(0);
-              }}
-              sx={{ width: "100%" }}
-            >
-              <Typography variant="body2" sx={{ color: "error.main" }}>
-                Clear Notifications
-              </Typography>
-            </Button>
-          {/* End of the notifications popover - Paper çevresinde belirli bir border var! */}
-            
-          </Paper>
-        </Popover>
+            {notifications.length > 0 && (
+              <Box sx={{ p: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Button
+                  fullWidth
+                  size="small"
+                  onClick={() => {
+                    setNotifications([]);
+                    setUnreadCount(0);
+                  }}
+                  sx={{ color: 'error.main', fontSize: '0.75rem' }}
+                >
+                  Clear All
+                </Button>
+              </Box>
+            )}
+          </Popover>
 
-
-        {/* User Menu */}
-        {user && (
-          <Box sx={{ ml: { xs: 1, sm: 3 } }}>
-            <IconButton
-              color="inherit"
-              onClick={handleMenuOpen}
-              sx={{
-                borderRadius: '12px',
-                padding: '8px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                },
-              }}
-            >
-              <AccountCircle sx={{ mr: 1 }} />
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                {user.username}
-              </Typography>
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-              TransitionComponent={Slide}
-              TransitionProps={{ direction: 'down' }}
-              PaperProps={{
-                elevation: 4,
-                sx: {
-                  mt: 1.5,
-                  minWidth: 200,
-                  borderRadius: '12px',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                  '& .MuiMenuItem-root': {
-                    px: 2,
-                    py: 1.5,
-                    borderRadius: '8px',
-                    mx: 1,
-                    my: 0.5,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    }
-                  },
-                },
-              }}
-            >
-              <MenuItem onClick={() => {
-                handleMenuClose();
-                navigate('/profile');
-              }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>Profile</Typography>
-              </MenuItem>
-              <MenuItem onClick={() => {
-                handleMenuClose();
-                navigate('/portfolios');
-              }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>Portfolios</Typography>
-              </MenuItem>
-              <MenuItem onClick={() => {
-                handleMenuClose();
-                navigate('/stocks');
-              }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>Stocks</Typography>
-              </MenuItem>
-              <MenuItem onClick={() => {
-                handleMenuClose();
-                navigate('/sectors');
-              }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>Sectors</Typography>
-              </MenuItem>
-
-              <MenuItem
-                onClick={() => {
-                  handleMenuClose();
-                  logout();
-                  navigate('/login');
-                }}
-                sx={{ 
-                  color: 'error.main',
+          {/* User Menu */}
+          {user && (
+            <>
+              <IconButton
+                onClick={handleMenuOpen}
+                size="small"
+                sx={{
+                  ml: 0.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: '10px',
+                  padding: '6px 12px',
+                  transition: 'all 0.2s',
                   '&:hover': {
-                    backgroundColor: 'error.lighter',
-                  }
+                    borderColor: 'primary.main',
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(0,212,170,0.08)'
+                        : 'rgba(13,147,115,0.06)',
+                  },
                 }}
               >
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>Log Out</Typography>
-              </MenuItem>
-            </Menu>
-          </Box>
-        )}
+                <Avatar
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    fontSize: '0.7rem',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    mr: { xs: 0, sm: 1 },
+                  }}
+                >
+                  {user.username?.charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    display: { xs: 'none', sm: 'block' },
+                    color: 'text.primary',
+                  }}
+                >
+                  {user.username}
+                </Typography>
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                TransitionComponent={Slide}
+                TransitionProps={{ direction: 'down' }}
+                PaperProps={{
+                  elevation: 8,
+                  sx: {
+                    mt: 1.5,
+                    minWidth: 200,
+                    borderRadius: '12px',
+                    '& .MuiMenuItem-root': {
+                      px: 2,
+                      py: 1.5,
+                      borderRadius: '8px',
+                      mx: 1,
+                      my: 0.25,
+                      gap: 1.5,
+                      fontSize: '0.875rem',
+                      transition: 'all 0.15s',
+                    },
+                  },
+                }}
+              >
+                <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>
+                  <Person fontSize="small" sx={{ color: 'text.secondary' }} />
+                  Profile
+                </MenuItem>
+                <MenuItem onClick={() => { handleMenuClose(); navigate('/portfolios'); }}>
+                  <PieChart fontSize="small" sx={{ color: 'text.secondary' }} />
+                  Portfolios
+                </MenuItem>
+                <MenuItem onClick={() => { handleMenuClose(); navigate('/stocks'); }}>
+                  <ShowChart fontSize="small" sx={{ color: 'text.secondary' }} />
+                  Stocks
+                </MenuItem>
+                <MenuItem onClick={() => { handleMenuClose(); navigate('/sectors'); }}>
+                  <Business fontSize="small" sx={{ color: 'text.secondary' }} />
+                  Sectors
+                </MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem
+                  onClick={() => { handleMenuClose(); logout(); navigate('/login'); }}
+                  sx={{ color: 'error.main' }}
+                >
+                  <Logout fontSize="small" />
+                  Log Out
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+        </Box>
       </Toolbar>
     </AppBar>
   );

@@ -1,3 +1,4 @@
+import os
 from sqlalchemy.orm import Session
 from models.models import User
 from passlib.context import CryptContext
@@ -8,10 +9,10 @@ from typing import Optional
 # Password hashing configuration
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT configuration
-SECRET_KEY = "tunahan"  # bunu sonradan daha secure hale getirip OS DAN ÇEKEBİLİRİZ!
+# JWT configuration — SECRET_KEY must be set via environment variable in production
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 class AuthenticationService:
     def __init__(self, db: Session):
@@ -59,7 +60,6 @@ class AuthenticationService:
             return None
         if not self.verify_password(password, user.password):
             return None
-        print("in service: ", user)
         return user
 
     # token oluşturuyor user için bunu frontend de keep edicek ve işlemleri sırasında backend e yollucakki onu authenticate etsin 

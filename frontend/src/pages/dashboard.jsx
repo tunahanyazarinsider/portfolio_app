@@ -4,76 +4,31 @@ import {
   Typography,
   Grid,
   Box,
-  Button,
+  Paper,
+  Fade
 } from '@mui/material';
-import SectorCard from '../components/SectorCard'; // Import sector card component
-import stockService from '../services/stockService'; // Import stock services
-import NewsSection from '../components/NewsSection'; // Import NewsSection
-import authService from '../services/authService';
+import SectorCard from '../components/SectorCard';
+import stockService from '../services/stockService';
+import NewsSection from '../components/NewsSection';
 import PortfolioCard from '../components/PortfolioCard';
 import portfolioService from '../services/portfolioService';
 import newsService from '../services/newsService';
-// for theme.palette. .. color:
-import { useTheme } from '@mui/material/styles';
-// user info
 import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
   const [portfolios, setPortfolios] = useState([]);
   const [sectors, setSectors] = useState([]);
-  // news
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
-  // theme
-  const theme = useTheme();
-  // user is the user information
-  const {user} = useAuth();
-
-  /*
-  user is sth like:
-    {
-      "user_id": 1,
-      "username": "johndoe",
-      "role": "user",
-      "email": "..",
-      "first_name": "..",
-      "last_name": "..",
-      "created_at": "2021-12-12T12:12:12.000000Z"
-    }
-  */
+  const { user } = useAuth();
 
   useEffect(() => {
-    // fetch data
     const fetchData = async () => {
       try {
-        const data = await portfolioService.getUserPortfolios(user.user_id);
-        /*
-            It returns an array of portfolios like this:
-            [
-                {
-                    "portfolio_id": 1,
-                    "user_id": 1,
-                    "name": "My Portfolio",
-                    "created_at": "2022-01-01T00:00:00Z"
-                },
-                {
-                    "portfolio_id": 2,
-                    "user_id": 1,
-                    "name": "Tech Stocks",
-                    "created_at": "2022-01-01T00:00:00Z"
-                }, ...
-
-        */
-
-        // Fetch data for portfolios, sectors, and news
         const sectorsData = await stockService.getAllSectors();
-        // fetch portfolios of the user by passing the user id 
         const portfoliosData = await portfolioService.getUserPortfolios(user.user_id);
-        console.log(portfoliosData);
-
-        // Get top 3 portfolios and sectors
-        setPortfolios(portfoliosData.slice(0, 3)); // Limit to top 3 portfolios
-        setSectors(sectorsData.slice(0, 3)); // Limit to top 3 sectors
+        setPortfolios(portfoliosData.slice(0, 3));
+        setSectors(sectorsData.slice(0, 3));
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -81,70 +36,100 @@ const Dashboard = () => {
       }
     };
 
-    const FetchNews = async () => {
-      // Fetch news about turkish economy / stock market
+    const fetchNews = async () => {
       const newsData = await newsService.getNews();
       setNews(newsData);
-    }
+    };
 
-
-    // fetch portfolio and sector datas
     fetchData();
-    // fetch news
-    FetchNews();
-  }, []); // these 2 function will be called when the component is mounted
+    fetchNews();
+  }, []);
 
   return (
-    <Container>
-      {/* Portfolios Preview */}
-      <Typography
-        variant="h4" 
-        sx={{ 
-            mb: 4,
-            margin: '2rem 0 1rem',
-            fontWeight: 700,
-            textAlign: 'center',
-            background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-            backgroundClip: 'text',
-            color: 'transparent'
-        }}
-      >
-        Featured Portfolios
-      </Typography>
-      <Grid container spacing={3}>
-        {portfolios.map((portfolio) => (
-          <Grid item xs={12} sm={6} md={4} key={portfolio.porfolio_id}>
-            <PortfolioCard portfolio={portfolio} />
-          </Grid>
-        ))}
-      </Grid>
+    <Container maxWidth="xl" sx={{ py: 4, pb: { xs: 10, md: 4 } }}>
+      {/* Welcome Header */}
+      <Fade in={true} timeout={500}>
+        <Box sx={{ mb: 5 }}>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              mb: 0.5,
+            }}
+          >
+            Welcome back, <Box component="span" sx={{ color: 'primary.main' }}>{user?.first_name || user?.username}</Box>
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+            Here's what's happening with your investments today.
+          </Typography>
+        </Box>
+      </Fade>
 
-      {/* Sectors Overview */}
-      <Typography 
-        variant="h4" 
-        sx={{ 
-            mb: 4,
-            margin: '2rem 0 1rem',
+      {/* Portfolios */}
+      <Box sx={{ mb: 5 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            mb: 3,
             fontWeight: 700,
-            textAlign: 'center',
-            background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-            backgroundClip: 'text',
-            color: 'transparent'
-        }}
-      
-      >
-        Explore Sectors
-      </Typography>
-      <Grid container spacing={3}>
-        {sectors.map((sector) => (
-          <Grid item xs={12} sm={6} md={4} key={sector.sector_id}>
-            <SectorCard sectorId={sector.sector_id} />
-          </Grid>
-        ))}
-      </Grid>
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Box
+            sx={{
+              width: 4,
+              height: 24,
+              borderRadius: 2,
+              bgcolor: 'primary.main',
+            }}
+          />
+          Your Portfolios
+        </Typography>
+        <Grid container spacing={3}>
+          {portfolios.map((portfolio) => (
+            <Grid item xs={12} sm={6} md={4} key={portfolio.portfolio_id}>
+              <PortfolioCard portfolio={portfolio} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
-      {/* News Section */}
-      <NewsSection news = {news} />
+      {/* Sectors */}
+      <Box sx={{ mb: 5 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            mb: 3,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <Box
+            sx={{
+              width: 4,
+              height: 24,
+              borderRadius: 2,
+              bgcolor: 'secondary.main',
+            }}
+          />
+          Explore Sectors
+        </Typography>
+        <Grid container spacing={3}>
+          {sectors.map((sector) => (
+            <Grid item xs={12} sm={6} md={4} key={sector.sector_id}>
+              <SectorCard sectorId={sector.sector_id} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+
+      {/* News */}
+      <NewsSection news={news} />
     </Container>
   );
 };

@@ -1,7 +1,10 @@
 import redis
 import json
 import os
+import logging
 from typing import Optional, Any
+
+logger = logging.getLogger(__name__)
 
 class RedisCache:
     """
@@ -14,9 +17,9 @@ class RedisCache:
             self.redis_client = redis.from_url(redis_url, decode_responses=True)
             # Test connection
             self.redis_client.ping()
-            print("✓ Connected to Redis cache")
+            logger.info("Connected to Redis cache")
         except Exception as e:
-            print(f"⚠ Redis connection failed: {e}. Cache will be disabled.")
+            logger.warning(f"Redis connection failed: {e}. Cache will be disabled.")
             self.redis_client = None
 
     def _is_connected(self) -> bool:
@@ -43,7 +46,7 @@ class RedisCache:
             self.redis_client.setex(key, ttl, json_value)
             return True
         except Exception as e:
-            print(f"Cache set error for key {key}: {e}")
+            logger.error(f"Cache set error for key {key}: {e}")
             return False
 
     def get_cache(self, key: str) -> Optional[Any]:
@@ -65,7 +68,7 @@ class RedisCache:
                 return json.loads(cached_value)
             return None
         except Exception as e:
-            print(f"Cache get error for key {key}: {e}")
+            logger.error(f"Cache get error for key {key}: {e}")
             return None
 
     def delete_cache(self, key: str) -> bool:
@@ -85,7 +88,7 @@ class RedisCache:
             self.redis_client.delete(key)
             return True
         except Exception as e:
-            print(f"Cache delete error for key {key}: {e}")
+            logger.error(f"Cache delete error for key {key}: {e}")
             return False
 
     def flush_all(self) -> bool:
@@ -102,7 +105,7 @@ class RedisCache:
             self.redis_client.flushdb()
             return True
         except Exception as e:
-            print(f"Cache flush error: {e}")
+            logger.error(f"Cache flush error: {e}")
             return False
 
 

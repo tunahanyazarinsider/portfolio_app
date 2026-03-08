@@ -2,15 +2,14 @@ import React, { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
-    CardActions,
-  Button,
   Typography,
   Box,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
+  Chip,
+  Stack,
+  useTheme,
 } from '@mui/material';
+import { Business, TrendingUp } from '@mui/icons-material';
 import stockService from '../services/stockService';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,7 +17,8 @@ const SectorCard = ({ sectorId }) => {
   const [sectorInfo, setSectorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-const navigate = useNavigate(); // for navigation to sector pages
+  const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchSectorInfo = async () => {
@@ -27,107 +27,134 @@ const navigate = useNavigate(); // for navigation to sector pages
         setSectorInfo(data);
       } catch (err) {
         setError('Failed to fetch sector information.');
-        console.error('Error fetching sector info:', err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchSectorInfo();
   }, [sectorId]);
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <CircularProgress />
-      </Box>
+      <Card sx={{ height: 280, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress size={28} sx={{ color: 'primary.main' }} />
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ textAlign: 'center', color: 'red' }}>
-        <Typography variant="body1">{error}</Typography>
-      </Box>
+      <Card sx={{ height: 280, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography variant="body2" color="error">{error}</Typography>
+      </Card>
     );
   }
 
   const { sector, number_of_companies, total_market_cap, top_3_companies } = sectorInfo;
 
+  const formatMarketCap = (value) => {
+    if (!value) return 'N/A';
+    if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T TL`;
+    if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B TL`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M TL`;
+    return `${value.toLocaleString()} TL`;
+  };
+
   return (
     <Card
-    onClick={() => navigate(`/sectors/${sectorId}`)} // Navigate to sector detail page
+      onClick={() => navigate(`/sectors/${sectorId}`)}
       sx={{
-        borderRadius: 6,
-        boxShadow: '0 6px 15px rgba(0, 0, 0, 0.1)',
-        height: 500,
-        maxWidth: 600,
-        width: '100%',
-        margin: '2rem auto',
-        padding: 3,
-        cursor: 'pointer', // Add cursor style to indicate it's clickable
-        transition: 'transform 0.2s', // Optional: add hover effect
+        cursor: 'pointer',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         '&:hover': {
-          transform: 'scale(1.02)' // Optional: slight scale on hover
-        }
+          transform: 'translateY(-4px)',
+        },
       }}
     >
-      <CardContent>
-        {/* Sector Name */}
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 600,
-            textAlign: 'center',
-            mb: 2,
-            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-          }}
-        >
-          {sector?.name || 'Unknown Sector'}
-        </Typography>
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.palette.mode === 'dark'
+                ? 'rgba(0,212,170,0.1)'
+                : 'rgba(13,147,115,0.08)',
+            }}
+          >
+            <Business sx={{ color: 'primary.main', fontSize: 20 }} />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, flex: 1, lineHeight: 1.2 }}>
+            {sector?.name || 'Unknown'}
+          </Typography>
+        </Box>
 
-        {/* General Sector Info */}
-        <Typography variant="body1" sx={{ mb: 1 }}>
-          <strong>Number of Companies:</strong> {number_of_companies ?? 'N/A'}
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          <strong>Total Market Cap:</strong>{' '}
-          {total_market_cap ? `${total_market_cap.toLocaleString()} TL` : 'N/A'}
-        </Typography>
+        <Stack direction="row" spacing={1} sx={{ mb: 2.5 }}>
+          <Chip
+            label={`${number_of_companies ?? 0} companies`}
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: '0.7rem' }}
+          />
+          <Chip
+            label={formatMarketCap(total_market_cap)}
+            size="small"
+            sx={{
+              fontSize: '0.7rem',
+              fontFamily: '"JetBrains Mono", monospace',
+              backgroundColor: theme.palette.mode === 'dark'
+                ? 'rgba(124,92,252,0.12)'
+                : 'rgba(109,74,255,0.08)',
+              color: 'secondary.main',
+              border: 'none',
+            }}
+          />
+        </Stack>
 
-        {/* Top Companies */}
-        <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
-          Top Companies:
-        </Typography>
-        <List dense>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+            TOP COMPANIES
+          </Typography>
           {top_3_companies?.length > 0 ? (
-            top_3_companies.map((company) => (
-              <ListItem
-                key={company.stock_symbol}
-                sx={{
-                  padding: '0.3rem 0',
-                }}
-              >
-                <ListItemText
-                  primary={`${company.name || 'Unknown'} (${
-                    company.stock_symbol || 'N/A'
-                  })`}
-                  secondary={`Market Cap: ${
-                    company.market_cap
-                      ? `${company.market_cap.toLocaleString()} TL`
-                      : 'N/A'
-                  }`}
-                  primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }}
-                  secondaryTypographyProps={{ fontSize: '0.8rem', color: 'text.secondary' }}
-                />
-              </ListItem>
-            ))
+            <Stack spacing={0.75}>
+              {top_3_companies.map((company) => (
+                <Box
+                  key={company.stock_symbol}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    py: 0.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {company.name || 'Unknown'}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontFamily: '"JetBrains Mono", monospace',
+                      color: 'text.secondary',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {company.stock_symbol}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
           ) : (
-            <Typography variant="body2" color="textSecondary" align="center">
+            <Typography variant="body2" color="text.secondary">
               No companies to display.
             </Typography>
           )}
-        </List>
+        </Box>
       </CardContent>
     </Card>
   );

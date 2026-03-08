@@ -1,0 +1,23 @@
+⏺ The database password is root
+
+  Database credentials:
+  - Username: root
+  - Password: root
+  - Database name: Portfolio_Management
+  - Host: localhost (or mysql when inside Docker)
+  - Port: 3306
+
+
+mysql container içinde sql runlamak için: -> db name: Portfolio_Management, db password : root
+mysql -h mysql -u root -proot Portfolio_Management
+
+
+
+curl -X POST "http://localhost:8000/auth/login" \
+    -H "Content-Type: application/json" \
+    -d '{"username":"your_username","password":"your_password"}'
+
+  This returns a token. Then use it to add stocks:
+
+curl -X POST "http://localhost:8001/api/stocks/?stock_symbol=KCHOL" \
+    -H "Authorization: Bearer YOUR_TOKEN"

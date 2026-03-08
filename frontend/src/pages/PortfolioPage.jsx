@@ -65,8 +65,8 @@ const PortfolioPage = ({ match }) => {
 
     // DISPLAY PORTFOLIO DETAILS    
     const COLORS = [
-      '#2563eb', '#059669', '#d97706', '#dc2626', 
-      '#7c3aed', '#db2777', '#2dd4bf', '#84cc16',
+      '#00d4aa', '#7c5cfc', '#ffc107', '#ff5252',
+      '#00b0ff', '#e040fb', '#00e676', '#ff9100',
       '#6366f1', '#ec4899', '#14b8a6', '#f59e0b'
     ];
 
@@ -283,45 +283,45 @@ const PortfolioPage = ({ match }) => {
     }
 
     return (
-        <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Container maxWidth="xl" sx={{ py: 4, pb: { xs: 10, md: 4 } }}>
 
             {/* Portfolio Details Section */}
             <Box sx={{ mb: 4, textAlign: 'center' }}>
-                <Typography variant="h3" sx={{ 
-                    fontWeight: 700, 
+                <Typography variant="h3" sx={{
+                    fontWeight: 800,
                     mb: 2,
-                    background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-                    backgroundClip: 'text',
-                    color: 'transparent'
+                    letterSpacing: '-0.02em',
                 }}>
                     {portfolio?.name || 'Portfolio Details'}
                 </Typography>
                 
                 <Grid container spacing={2} justifyContent="center" sx={{ mb: 4 }}>
                     <Grid item xs={12} md={4}>
-                        <Paper elevation={3} sx={{ 
-                            p: 3, 
+                        <Paper elevation={0} sx={{
+                            p: 3,
                             textAlign: 'center',
-                            background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-                            borderRadius: 2
+                            borderRadius: '16px',
+                            border: '1px solid',
+                            borderColor: 'divider',
                         }}>
                             <Typography variant="h6" color="text.secondary">Total Value</Typography>
-                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2563eb' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontFamily: '"JetBrains Mono", monospace' }}>
                                 {formatCurrency(totalValue)}
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <Paper elevation={3} sx={{ 
-                            p: 3, 
+                        <Paper elevation={0} sx={{
+                            p: 3,
                             textAlign: 'center',
-                            background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-                            borderRadius: 2
+                            borderRadius: '16px',
+                            border: '1px solid',
+                            borderColor: 'divider',
                         }}>
                             <Typography variant="h6" color="text.secondary">Total P/L</Typography>
                             <Typography variant="h4" sx={{ 
                                 fontWeight: 'bold', 
-                                color: totalProfit >= 0 ? '#059669' : '#dc2626'
+                                color: totalProfit >= 0 ? 'success.main' : 'error.main'
                             }}>
                                 {formatCurrency(totalProfit)}
                             </Typography>
@@ -332,11 +332,12 @@ const PortfolioPage = ({ match }) => {
 
             <Grid container spacing={4}>
                 <Grid item xs={12} md={5}>
-                    <Paper elevation={3} sx={{ 
-                        p: 3, 
+                    <Paper elevation={0} sx={{
+                        p: 3,
                         height: '100%',
-                        background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-                        borderRadius: 2
+                        borderRadius: '16px',
+                        border: '1px solid',
+                        borderColor: 'divider',
                     }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', fontWeight: 600 }}>
                             Market Value Distribution
@@ -378,10 +379,11 @@ const PortfolioPage = ({ match }) => {
                 <Grid item xs={12} md={7}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {sectors.map((sector) => (
-                            <Paper key={sector} elevation={3} sx={{ 
-                                borderRadius: 2,
+                            <Paper key={sector} elevation={0} sx={{
+                                borderRadius: '16px',
                                 overflow: 'hidden',
-                                background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)'
+                                border: '1px solid',
+                                borderColor: 'divider',
                             }}>
                                 <Accordion>
                                     <AccordionSummary
@@ -443,7 +445,7 @@ const PortfolioPage = ({ match }) => {
                                                             <Typography
                                                                 variant="body2"
                                                                 sx={{
-                                                                    color: holding.profitLoss >= 0 ? '#059669' : '#dc2626',
+                                                                    color: holding.profitLoss >= 0 ? 'success.main' : 'error.main',
                                                                     fontWeight: 'bold'
                                                                 }}
                                                             >
@@ -464,18 +466,16 @@ const PortfolioPage = ({ match }) => {
 
             {/* Manage Holdings Section */}
             <Box sx={{ mt: 6, mb: 4 }}>
-                <Paper elevation={3} sx={{
+                <Paper elevation={0} sx={{
                     p: 4,
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-                    borderRadius: 2
+                    borderRadius: '16px',
+                    border: '1px solid',
+                    borderColor: 'divider',
                 }}>
                     <Typography variant="h5" sx={{
                         mb: 4,
-                        fontWeight: 600,
+                        fontWeight: 700,
                         textAlign: 'center',
-                        background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-                        backgroundClip: 'text',
-                        color: 'transparent'
                     }}>
                         Manage Holdings
                     </Typography>
@@ -524,8 +524,8 @@ const PortfolioPage = ({ match }) => {
                                 onClick={() => setIsAddDialogOpen(true)}
                                 disabled={!selectedStock || !quantity || !averagePrice}
                                 sx={{
-                                    color : 'blue',
-                                    background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
+                                    backgroundColor: 'primary.main',
+                                    color: 'primary.contrastText',
                                     py: 2
                                 }}
                             >
@@ -601,7 +601,7 @@ const PortfolioPage = ({ match }) => {
                                             <Typography
                                                 variant="body2"
                                                 sx={{
-                                                    color: holding.profitLoss >= 0 ? '#059669' : '#dc2626',
+                                                    color: holding.profitLoss >= 0 ? 'success.main' : 'error.main',
                                                     fontWeight: 'bold'
                                                 }}
                                             >
@@ -655,7 +655,7 @@ const PortfolioPage = ({ match }) => {
                         onClick={handleAddHolding}
                         variant="contained"
                         disabled={isLoading}
-                        sx={{ background: 'linear-gradient(45deg, #2563eb, #7c3aed)', color : 'white' }}
+                        sx={{ backgroundColor: 'primary.main', color: 'primary.contrastText' }}
                     >
                         {isLoading ? <CircularProgress size={24} /> : 'Confirm'}
                     </Button>
@@ -691,7 +691,7 @@ const PortfolioPage = ({ match }) => {
                         onClick={handleUpdateHolding}
                         variant="contained"
                         disabled={isLoading || !decreaseQuantity || decreaseQuantity > (selectedHolding?.quantity || 0)}
-                        sx={{ background: 'linear-gradient(45deg, #2563eb, #7c3aed)' }}
+                        sx={{ backgroundColor: 'primary.main', color: 'primary.contrastText' }}
                     >
                         {isLoading ? <CircularProgress size={24} /> : 'Confirm'}
                     </Button>

@@ -1,10 +1,11 @@
+import os
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from typing import Optional
 
-# These should match the values used in authentication service
-SECRET_KEY = "tunahan"  # Should be same as auth service
+# Must match the value used in authentication service — set via environment variable
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 security = HTTPBearer()
 

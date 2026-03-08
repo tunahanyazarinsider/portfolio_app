@@ -1,0 +1,9 @@
+sqlalchemy
+pydantic
+fastapi
+uvicorn
+pymysql
+yfinance
+pandas
+python-jose[cryptography]
+redis

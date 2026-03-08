@@ -60,8 +60,6 @@ def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
         password=user_credentials.password
     )
 
-    print(f"Authenticated user: {user}")
-    
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -75,9 +73,6 @@ def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
               "role": user.role
             }
     )
-    print(access_token)
-
-    
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/users/{username}", response_model=UserResponse)

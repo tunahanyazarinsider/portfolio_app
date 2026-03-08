@@ -1,28 +1,30 @@
 # Standard library imports
+import os
+import logging
 import uvicorn
+import asyncio
 
 # Third-party imports
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 # Local application imports
 from controllers.watchlist_controller import router as stock_router
 from models.models import Base
-from utils.db_context import engine
+from utils.db_context import engine, get_db
 from utils.websocket_manager import websocket_manager
-# for checking the price of the stock every minute and inform the user
-import asyncio
-from utils.db_context import get_db
 from services.watchlist_service import WatchlistService
 
-# Single dot (.) means current directory, double dot (..) means parent directory
-
+logger = logging.getLogger(__name__)
 
 # Create database tables (ignore if already exist)
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:
-    print(f"Note: Tables may already exist: {e}")
+    logger.warning(f"Table creation note: {e}")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -31,10 +33,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
+# Configure CORS — restrict origins in production
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -50,6 +54,14 @@ async def root():
         "docs_url": "/docs",
         "redoc_url": "/redoc"
     }
+
+@app.get("/health")
+async def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"status": "unhealthy", "database": str(e)})
 
 async def background_task():
     db = next(get_db())  # Get database session
@@ -81,11 +93,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     try:
         while True:
             data = await websocket.receive_text()  # Wait for message from the client
-            print(f"Received data from user {user_id}: {data}")
-            await websocket.send_text(f"Message received: {data}")  # Send a response back to the client
+            logger.debug(f"Received data from user {user_id}: {data}")
+            await websocket.send_text(f"Message received: {data}")
     except WebSocketDisconnect:
-        await websocket_manager.disconnect(user_id)  # Ensure disconnection is handled
-        print(f"User {user_id} disconnected.")
+        await websocket_manager.disconnect(user_id)
+        logger.info(f"User {user_id} disconnected.")
 
 
 if __name__ == "__main__":

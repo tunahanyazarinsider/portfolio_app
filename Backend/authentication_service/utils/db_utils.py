@@ -10,7 +10,13 @@ DATABASE_URL = os.getenv(
 )
 
 # SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=20,
+    max_overflow=10,
+    pool_recycle=3600,
+    pool_pre_ping=True
+)
 
 # Base class for models
 Base = declarative_base()

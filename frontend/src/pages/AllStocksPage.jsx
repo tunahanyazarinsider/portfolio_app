@@ -343,19 +343,15 @@ const AllStocksPage = () => {
       maxWidth="md"
       fullWidth
       PaperProps={{
-        style: {
-            background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
+        sx: {
             borderRadius: '16px',
-            boxShadow: '0 12px 24px rgba(0,0,0,0.2)'
           }
       }}
     >
-      <DialogTitle style={{ 
-          color: 'white', 
-          fontWeight: 'bold', 
+      <DialogTitle sx={{
+          fontWeight: 'bold',
           textAlign: 'center',
           padding: '24px',
-          background: 'rgba(0,0,0,0.1)'
         }}>Advanced Stock Filters</DialogTitle>
       <DialogContent 
         style={{ 
@@ -1141,15 +1137,13 @@ const AllStocksPage = () => {
     // resulting jsx if the data is loaded
   return (
     <Box sx={{ width: '100%', overflowX: 'auto' }}>
-            <Typography 
-                variant="h4" 
-                sx={{ 
-                    p: 3, 
-                    pb: 0, 
-                    fontWeight: 'bold',
-                    background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-                    backgroundClip: 'text',
-                    color: 'transparent',
+            <Typography
+                variant="h4"
+                sx={{
+                    p: 3,
+                    pb: 0,
+                    fontWeight: 800,
+                    letterSpacing: '-0.02em',
                     marginBottom: '3px'
                 }}
             >
@@ -1190,15 +1184,9 @@ const AllStocksPage = () => {
                       )
                     }}
                 />
-                <Button 
-                    variant="contained" 
+                <Button
+                    variant="contained"
                     onClick={() => setOpenFiltersDialog(true)}
-                    sx={{ 
-                      background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-                        '&:hover': {
-                            background: theme.palette.primary.light 
-                        }
-                    }}
                 >
                     All Filters
                 </Button>

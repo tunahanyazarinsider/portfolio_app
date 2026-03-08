@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = 'https://newsapi.org/v2';
-const API_KEY = '968a95fc48c64b11995cce91b9270621';
+const API_KEY = process.env.REACT_APP_NEWS_API_KEY || '';
 
 const newsService = {
     // 1. It takes a company name and returns news about it

@@ -1,8 +1,7 @@
-// src/components/TechnicalAnalysisChart.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { 
-  Box, 
-  Paper, 
+import {
+  Box,
+  Paper,
   IconButton,
   Tooltip,
   ButtonGroup,
@@ -11,33 +10,25 @@ import {
 import {
   ShowChart,
   CandlestickChart,
-  BarChart,
-  LightMode,
-  DarkMode
 } from '@mui/icons-material';
+import { useThemeMode } from '../context/ThemeContext';
 
 let tvScriptLoadingPromise;
 
 const TechnicalAnalysisChart = ({ symbol }) => {
   const theme = useTheme();
+  const { mode } = useThemeMode();
   const [chartType, setChartType] = useState('candlestick');
-  const [themeMode, setThemeMode] = useState('light');
   const widgetRef = useRef(null);
   const onLoadScriptRef = useRef();
 
   const handleChartTypeChange = (type) => {
     setChartType(type);
-    createWidget(themeMode, type);
-  };
-
-  const handleThemeChange = () => {
-    const newTheme = themeMode === 'light' ? 'dark' : 'light';
-    setThemeMode(newTheme);
-    createWidget(newTheme, chartType);
+    createWidget(mode, type);
   };
 
   useEffect(() => {
-    onLoadScriptRef.current = () => createWidget(themeMode, chartType);
+    onLoadScriptRef.current = () => createWidget(mode, chartType);
 
     if (!tvScriptLoadingPromise) {
       tvScriptLoadingPromise = new Promise((resolve) => {
@@ -54,30 +45,32 @@ const TechnicalAnalysisChart = ({ symbol }) => {
     return () => {
       onLoadScriptRef.current = null;
     };
-  }, [symbol, themeMode, chartType]);
+  }, [symbol, mode, chartType]);
 
-  function createWidget(theme = 'light', chartStyle = 'candlestick') {
+  function createWidget(themeMode = 'dark', chartStyle = 'candlestick') {
     if (document.getElementById('technical-analysis-chart') && 'TradingView' in window) {
       if (widgetRef.current) {
         document.getElementById('technical-analysis-chart').innerHTML = '';
       }
 
       const chartStyles = {
-        candlestick: 1, // Candlestick
-        line: 3,       // Line
-      };    
+        candlestick: 1,
+        line: 3,
+      };
+
+      const isDark = themeMode === 'dark';
 
       widgetRef.current = new window.TradingView.widget({
         autosize: true,
         symbol: `BIST:${symbol}`,
         interval: "D",
         timezone: "Europe/Istanbul",
-        theme: theme,
+        theme: isDark ? 'dark' : 'light',
         style: chartStyles[chartStyle],
         locale: "tr",
-        toolbar_bg: theme === 'light' ? "#f1f3f6" : "#2a2e39",
+        toolbar_bg: isDark ? "#111827" : "#ffffff",
         enable_publishing: false,
-        allow_symbol_change: false, // user should not be able to change symbol
+        allow_symbol_change: false,
         container_id: "technical-analysis-chart",
         hide_top_toolbar: false,
         hide_side_toolbar: false,
@@ -103,78 +96,74 @@ const TechnicalAnalysisChart = ({ symbol }) => {
           "hide_last_na_study_output"
         ],
         overrides: {
-          "mainSeriesProperties.candleStyle.upColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.downColor": "#ef5350",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
-          "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
-          "scalesProperties.textColor": theme === 'light' ? "#555" : "#999",
+          "mainSeriesProperties.candleStyle.upColor": "#00d4aa",
+          "mainSeriesProperties.candleStyle.downColor": "#ff5252",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#00d4aa",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#ff5252",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#00d4aa",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#ff5252",
+          "scalesProperties.textColor": isDark ? "#8b95a5" : "#6b7280",
           "paneProperties.backgroundType": "solid",
-          "paneProperties.background": theme === 'light' ? "#ffffff" : "#131722",
-          "paneProperties.gridProperties.color": theme === 'light' ? "#F0F3FA" : "#2A2E39",
+          "paneProperties.background": isDark ? "#111827" : "#ffffff",
+          "paneProperties.gridProperties.color": isDark ? "#1a2035" : "#f3f4f6",
           "mainSeriesProperties.showPriceLine": true,
         },
         loading_screen: {
-          backgroundColor: theme === 'light' ? "#ffffff" : "#131722",
-          foregroundColor: theme === 'light' ? "#2962FF" : "#5d9cf5",
+          backgroundColor: isDark ? "#111827" : "#ffffff",
+          foregroundColor: isDark ? "#00d4aa" : "#0d9373",
         },
       });
     }
   }
 
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        p: 2,
-        background: themeMode === 'light' ? 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)' : 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-        borderRadius: 2
-      }}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        {/* Chart Type Selector */}
-        <ButtonGroup variant="outlined" size="small">
+    <Box sx={{ mt: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1.5, gap: 0.5 }}>
+        <ButtonGroup size="small" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px' }}>
           <Tooltip title="Candlestick">
-            <IconButton 
+            <IconButton
               onClick={() => handleChartTypeChange('candlestick')}
-              color={chartType === 'candlestick' ? 'primary' : 'default'}
+              sx={{
+                borderRadius: '8px 0 0 8px',
+                color: chartType === 'candlestick' ? 'primary.main' : 'text.secondary',
+                backgroundColor: chartType === 'candlestick'
+                  ? (theme.palette.mode === 'dark' ? 'rgba(0,212,170,0.1)' : 'rgba(13,147,115,0.08)')
+                  : 'transparent',
+              }}
             >
-              <CandlestickChart />
+              <CandlestickChart fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Line">
-            <IconButton 
+            <IconButton
               onClick={() => handleChartTypeChange('line')}
-              color={chartType === 'line' ? 'primary' : 'default'}
+              sx={{
+                borderRadius: '0 8px 8px 0',
+                color: chartType === 'line' ? 'primary.main' : 'text.secondary',
+                backgroundColor: chartType === 'line'
+                  ? (theme.palette.mode === 'dark' ? 'rgba(0,212,170,0.1)' : 'rgba(13,147,115,0.08)')
+                  : 'transparent',
+              }}
             >
-              <ShowChart />
+              <ShowChart fontSize="small" />
             </IconButton>
           </Tooltip>
         </ButtonGroup>
-
-        {/* Theme Toggle */}
-        <Tooltip title={`Switch to ${themeMode === 'light' ? 'dark' : 'light'} mode`}>
-          <IconButton onClick={handleThemeChange}>
-            {themeMode === 'light' ? <DarkMode /> : <LightMode />}
-          </IconButton>
-        </Tooltip>
       </Box>
 
-      {/* TradingView Chart Container */}
       <Box
         id="technical-analysis-chart"
         sx={{
           height: '600px',
           width: '100%',
-          borderRadius: 1,
+          borderRadius: '12px',
           overflow: 'hidden',
-          '& iframe': {
-            border: 'none',
-          }
+          border: '1px solid',
+          borderColor: 'divider',
+          '& iframe': { border: 'none' },
         }}
       />
-    </Paper>
+    </Box>
   );
 };
 
