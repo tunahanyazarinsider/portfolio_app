@@ -1,0 +1,11 @@
+frontend/node_modules/
+frontend/build/
+.git/
+.idea/
+**/__pycache__/
+**/*.pyc
+*.md
+.env
+.dockerignore
+Backend/*/venv/
+.idea/

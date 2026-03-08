@@ -121,11 +121,9 @@ const AllSectorsPage = () => {
       <Typography 
         variant="h3" 
         sx={{ 
-            fontWeight: 700,
+            fontWeight: 800,
             textAlign: 'center',
-            background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-            backgroundClip: 'text',
-            color: 'transparent'
+            letterSpacing: '-0.02em',
         }}
       >
         Explore Market Sectors

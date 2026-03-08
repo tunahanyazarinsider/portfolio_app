@@ -193,26 +193,25 @@ const WatchlistPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4, pb: { xs: 10, md: 4 } }}>
       {/* Watchlist Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography variant="h3" sx={{
-          fontWeight: 700,
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{
+          fontWeight: 800,
           mb: 2,
-          background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
-          backgroundClip: 'text',
-          color: 'transparent'
+          letterSpacing: '-0.02em',
         }}>
           {watchlist?.name || 'Watchlist'}
         </Typography>
       </Box>
 
       {/* Add Stock Section */}
-      <Paper elevation={3} sx={{
+      <Paper elevation={0} sx={{
         p: 4,
         mb: 4,
-        background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-        borderRadius: 2
+        borderRadius: '16px',
+        border: '1px solid',
+        borderColor: 'divider',
       }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={8}>
@@ -238,9 +237,7 @@ const WatchlistPage = () => {
                 onClick={handleAddStock}
                 disabled={!selectedStock}
                 sx={{
-                background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.light})`,
                 py: 2,
-                color: 'white' 
                 }}
             >
                 Add to Watchlist
@@ -250,9 +247,10 @@ const WatchlistPage = () => {
       </Paper>
 
       {/* Stocks Table */}
-      <TableContainer component={Paper} sx={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-        borderRadius: 2
+      <TableContainer component={Paper} elevation={0} sx={{
+        borderRadius: '16px',
+        border: '1px solid',
+        borderColor: 'divider',
       }}>
         <Table>
           <TableHead>

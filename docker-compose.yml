@@ -38,12 +38,15 @@ services:
 
   # Authentication Service
   auth-service:
+    profiles: ["backend"]
     build:
       context: .
       dockerfile: Backend/authentication_service/Dockerfile
     container_name: auth_service
     environment:
       DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "8000:8000"
     depends_on:
@@ -54,6 +57,7 @@ services:
 
   # Stock Service
   stock-service:
+    profiles: ["backend"]
     build:
       context: .
       dockerfile: Backend/stock_service/Dockerfile
@@ -61,6 +65,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "8001:8001"
     depends_on:
@@ -73,12 +79,15 @@ services:
 
   # Watchlist Service
   watchlist-service:
+    profiles: ["backend"]
     build:
       context: .
       dockerfile: Backend/watchlist_service/Dockerfile
     container_name: watchlist_service
     environment:
       DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "8002:8002"
     depends_on:
@@ -87,11 +96,37 @@ services:
     networks:
       - portfolio_network
 
+  # ML Analytics Service
+  ml-service:
+    profiles: ["ml"]
+    build:
+      context: .
+      dockerfile: Backend/ml_service/Dockerfile
+    container_name: ml_service
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root@mysql:3306/Portfolio_Management}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8003:8003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - portfolio_network
+
   # Frontend (React)
   frontend:
+    profiles: ["frontend"]
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        REACT_APP_AUTH_API: ${REACT_APP_AUTH_API:-http://localhost:8000}
+        REACT_APP_STOCK_API: ${REACT_APP_STOCK_API:-http://localhost:8001}
+        REACT_APP_WATCHLIST_API: ${REACT_APP_WATCHLIST_API:-http://localhost:8002}
     container_name: portfolio_frontend
     ports:
       - "3000:3000"
@@ -101,10 +136,6 @@ services:
       - watchlist-service
     networks:
       - portfolio_network
-    environment:
-      REACT_APP_AUTH_API: http://auth-service:8000
-      REACT_APP_STOCK_API: http://stock-service:8001
-      REACT_APP_WATCHLIST_API: http://watchlist-service:8002
 
 volumes:
   mysql_data:
